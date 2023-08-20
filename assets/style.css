@@ -1,4 +1,12 @@
+/* Dla kolumn zawierających Dropdowny */
 .dash-dropdown {
-    font-size: 20px;
-    text-align: center;
+    text-shadow:    4px 4px 4px #afafaffe ;
+/*    #bfbfbf5e ;*/
+    color:  green;
+/*    color: blue;*/
+
+    font-weight: bold;
 }
+
+
+
