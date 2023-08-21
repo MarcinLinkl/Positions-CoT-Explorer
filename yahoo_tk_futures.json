@@ -45,5 +45,11 @@
     "S&P 500 Information Technology": "^SP500-45",
     "S&P 500 Materials": "^SP500-15",
     "S&P 500 Utilities": "^SP500-55",
-    "Yapanese yen": "JPYUSD=X"
+    "Yapanese Yen": "JPYUSD=X",
+    "Aluminum Futures": "ALI=F",
+    "Bitcoin Futures": "BTC=F",
+    "Bitcoin USD": "BTC-USD",
+    "Micro Bitcoin Futures": "MBT=F",
+    "Australian Dollar Futures": "6A=F",
+    "AUD/USD": "AUDUSD=X"
 }

@@ -33,8 +33,6 @@ def find_similar_ticker(commodity_selected, data):
             best_score = score
 
     if best_match is not None and best_score >= 0.6:
-        print(f"Dopasowanie: {best_match}")
-        print(f"Podobnosc: {best_score}")
         return data[best_match]
     else:
         # Spróbuj odwrócić kolejność wyrazów w zapytaniu użytkownika i ponownie porównać

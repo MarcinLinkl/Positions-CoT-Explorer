@@ -7,7 +7,7 @@ from ticker_finder import *
 import sqlite3
 import pandas as pd
 import plotly.express as px
-
+import plotly.graph_objs as go
 
 yahoo_tk_data = load_yahoo_tk_data()
 
@@ -19,7 +19,7 @@ app.layout = dbc.Container(
             [
                 dbc.Col(
                     [
-                        dbc.Label("Select report:"),
+                        dbc.Label("Select CFTC report:"),
                         dcc.Dropdown(
                             id="report-dropdown",
                             options=get_reports_opts(),
@@ -283,7 +283,7 @@ def update_year_slider_and_price_dropdown_value(selected):
 
     ticker_dropdown = find_similar_ticker(selected, yahoo_tk_data)
     price_chart_label = (
-        "Price chart not found; you may need to select one manually:"
+        "Price chart not found; may need to select one manually:"
         if ticker_dropdown is None
         else f"Price chart found: {ticker_dropdown}, you can adjust manually if needed"
     )
@@ -311,17 +311,60 @@ def toggle_price_graph_visibility(chart_together_value):
     return {"display": "none"} if chart_together_value != [True] else {}
 
 
+# @app.callback(
+#     Output("price-graph", "figure"),
+#     Output("commodity-graph", "figure"),
+#     Input("market-and-exchange-names-dropdown", "value"),
+#     Input("position-type", "value"),
+#     Input("year-slider", "value"),
+#     Input("show-option", "value"),
+#     Input("chart-price-dropdown", "value"),
+#     Input("add-price-line", "value"),
+# )
+# def update_graphs_callback(selected, positions, year, options, ticker, add_price):
+#     if ticker:
+#         print("Download: ", ticker)
+#         if year != [0, 0]:
+#             df_price = yf.download(
+#                 ticker,
+#                 start=f"{year[0]}-01-01",
+#                 end=f"{year[1]}-12-31",
+#                 interval="1wk",
+#             )["Close"].to_frame()
+#         else:
+#             df_price = yf.download(
+#                 ticker,
+#                 interval="1wk",
+#             )["Close"].to_frame()
+
+#         fig = px.line(
+#             df_price,
+#             x=df_price.index,
+#             y="Close",
+#             title=f"Price Chart for {ticker}",
+#         )
+
+#         fig.update_traces(line=dict(color="blue", width=2))  # Dostosowanie linii
+#         fig.update_xaxes(title_text="Date", tickformat="%b %Y")  # Format daty
+#         fig.update_yaxes(title_text="Price (USD)")  # Etykieta osi y
+#         fig.update_layout(
+#             plot_bgcolor="white",  # Tło wykresu
+#             xaxis=dict(showgrid=True),
+#             yaxis=dict(showgrid=True),
+#         )
+
+#         fig.update_xaxes(rangeslider_visible=True)
+#         return fig, {}
+#     return {}, {}
+
+
 @app.callback(
     Output("price-graph", "figure"),
-    Output("commodity-graph", "figure"),
     Input("market-and-exchange-names-dropdown", "value"),
-    Input("position-type", "value"),
     Input("year-slider", "value"),
-    Input("show-option", "value"),
     Input("chart-price-dropdown", "value"),
-    Input("add-price-line", "value"),
 )
-def update_graphs_callback(selected, positions, year, options, ticker, add_price):
+def update_graphs_callback(selected, year, ticker):
     if ticker:
         print("Download: ", ticker)
         if year != [0, 0]:
@@ -336,26 +379,32 @@ def update_graphs_callback(selected, positions, year, options, ticker, add_price
                 ticker,
                 interval="1wk",
             )["Close"].to_frame()
+        print("hello")
+        print(df_price)
+        figure = {
+            "data": [
+                go.Scatter(
+                    x=df_price.index,
+                    y=df_price["Close"],
+                    mode="lines",
+                    marker={"color": "blue"},
+                    name="Price",
+                ),
+            ],
+            "layout": {
+                "title": f"Price Chart for {ticker}",
+                "xaxis": {"title": "Date"},
+                "yaxis": {"title": "Price (USD)"},
+                "showlegend": True,
+                "legend": {"x": 0.02, "y": 0.98},
+                "margin": {"l": 60, "r": 10, "t": 50, "b": 60},
+                "hovermode": "x",
+            },
+        }
 
-        fig = px.line(
-            df_price,
-            x=df_price.index,
-            y="Close",
-            title=f"Price Chart for {ticker}",
-        )
+        return figure
 
-        fig.update_traces(line=dict(color="blue", width=2))  # Dostosowanie linii
-        fig.update_xaxes(title_text="Date", tickformat="%b %Y")  # Format daty
-        fig.update_yaxes(title_text="Price (USD)")  # Etykieta osi y
-        fig.update_layout(
-            plot_bgcolor="white",  # Tło wykresu
-            xaxis=dict(showgrid=True),
-            yaxis=dict(showgrid=True),
-        )
-
-        fig.update_xaxes(rangeslider_visible=True)
-        return fig, {}
-    return {}, {}
+    return {}
 
 
 def load_date(selected, position, year, options, chart_ticker, add_price):
