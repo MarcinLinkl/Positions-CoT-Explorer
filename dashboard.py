@@ -23,6 +23,7 @@ app.layout = dbc.Container(
                         dcc.Dropdown(
                             id="report-dropdown",
                             options=get_reports_opts(),
+                            value="report_legacy_futures_only",
                             placeholder="Select a report",
                             optionHeight=50,
                             className="dash-dropdown",
@@ -115,7 +116,7 @@ app.layout = dbc.Container(
                                     "value": "tot_rept_positions",
                                 },
                             ],
-                            value="noncomm_positions",
+                            value=["noncomm_positions"],
                             multi=True,
                             placeholder="Select a position type",
                             className="dash-bootstrap",
@@ -162,7 +163,7 @@ app.layout = dbc.Container(
                                 "value": True,
                             },
                         ],
-                        value=[False],
+                        value=False,
                         inline=True,
                         labelStyle={
                             "display": "inline-block",
@@ -311,107 +312,124 @@ def toggle_price_graph_visibility(chart_together_value):
     return {"display": "none"} if chart_together_value != [True] else {}
 
 
-# @app.callback(
-#     Output("price-graph", "figure"),
-#     Output("commodity-graph", "figure"),
-#     Input("market-and-exchange-names-dropdown", "value"),
-#     Input("position-type", "value"),
-#     Input("year-slider", "value"),
-#     Input("show-option", "value"),
-#     Input("chart-price-dropdown", "value"),
-#     Input("add-price-line", "value"),
-# )
-# def update_graphs_callback(selected, positions, year, options, ticker, add_price):
-#     if ticker:
-#         print("Download: ", ticker)
-#         if year != [0, 0]:
-#             df_price = yf.download(
-#                 ticker,
-#                 start=f"{year[0]}-01-01",
-#                 end=f"{year[1]}-12-31",
-#                 interval="1wk",
-#             )["Close"].to_frame()
-#         else:
-#             df_price = yf.download(
-#                 ticker,
-#                 interval="1wk",
-#             )["Close"].to_frame()
+def get_legacy_futures(selected_market_commodity, position_type, year):
+    print("getting ", selected_market_commodity)
+    columns = ", ".join(
+        [f"{pos_type}_long_all, {pos_type}_short_all" for pos_type in position_type]
+    ).replace("tot_rept_positions_short_all", "tot_rept_positions_short")
+    print(columns)
+    query = f"""
+            SELECT report_date_as_yyyy_mm_dd, {columns}
+            FROM report_legacy_futures_only
+            WHERE market_and_exchange_names = '{selected_market_commodity}'
+            AND report_date_as_yyyy_mm_dd BETWEEN '{year[0]}-01-01' AND '{year[1]}-12-31'
+            ORDER BY 1 ASC
+        """
+    print(query)
+    conn = sqlite3.connect("data.db")
+    df_data = pd.read_sql(query, conn)
+    conn.close()
 
-#         fig = px.line(
-#             df_price,
-#             x=df_price.index,
-#             y="Close",
-#             title=f"Price Chart for {ticker}",
-#         )
+    df_data = df_data.rename(
+        columns={"tot_rept_positions_short": "tot_rept_positions_short_all"}
+    )
+    df_data.rename(columns={"report_date_as_yyyy_mm_dd": "Date"}, inplace=True)
+    df_data.set_index("Date", inplace=True)
+    df_data.index = pd.to_datetime(df_data.index)
+    for pos_type in position_type:
+        df_data[f"{pos_type}_net"] = pd.to_numeric(
+            df_data[f"{pos_type}_long_all"]
+        ) - pd.to_numeric(df_data[f"{pos_type}_short_all"], errors="coerce")
+    return df_data
 
-#         fig.update_traces(line=dict(color="blue", width=2))  # Dostosowanie linii
-#         fig.update_xaxes(title_text="Date", tickformat="%b %Y")  # Format daty
-#         fig.update_yaxes(title_text="Price (USD)")  # Etykieta osi y
-#         fig.update_layout(
-#             plot_bgcolor="white",  # Tło wykresu
-#             xaxis=dict(showgrid=True),
-#             yaxis=dict(showgrid=True),
-#         )
 
-#         fig.update_xaxes(rangeslider_visible=True)
-#         return fig, {}
-#     return {}, {}
+def get_position_data(report_type, selected_market_commodity, position_type, year):
+    print("getting ", report_type)
+    if report_type == "report_legacy_futures_only":
+        print("starting report_legacy_futures_only")
+        return get_legacy_futures(selected_market_commodity, position_type, year)
 
 
 @app.callback(
     Output("price-graph", "figure"),
+    Output("commodity-graph", "figure"),
+    Input("report-dropdown", "value"),
     Input("market-and-exchange-names-dropdown", "value"),
+    Input("position-type", "value"),
     Input("year-slider", "value"),
+    Input("show-option", "value"),
     Input("chart-price-dropdown", "value"),
+    Input("add-price-line", "value"),
 )
-def update_graphs_callback(selected, year, ticker):
+def update_graphs_callback(
+    report_type, selected_market_commodity, positions, year, options, ticker, add_price
+):
     if ticker:
-        print("Download: ", ticker)
-        if year != [0, 0]:
-            df_price = yf.download(
-                ticker,
-                start=f"{year[0]}-01-01",
-                end=f"{year[1]}-12-31",
-                interval="1wk",
-            )["Close"].to_frame()
-        else:
-            df_price = yf.download(
-                ticker,
-                interval="1wk",
-            )["Close"].to_frame()
-        print("hello")
-        print(df_price)
-        figure = {
-            "data": [
-                go.Scatter(
-                    x=df_price.index,
-                    y=df_price["Close"],
-                    mode="lines",
-                    marker={"color": "blue"},
-                    name="Price",
-                ),
-            ],
-            "layout": {
-                "title": f"Price Chart for {ticker}",
-                "xaxis": {"title": "Date"},
-                "yaxis": {"title": "Price (USD)"},
-                "showlegend": True,
-                "legend": {"x": 0.02, "y": 0.98},
-                "margin": {"l": 60, "r": 10, "t": 50, "b": 60},
-                "hovermode": "x",
-            },
-        }
+        df_price = get_price_data(ticker, year)
+        fig_price = create_chart_figure(df_price, ticker)
+    else:
+        fig_price = {}
+    if selected_market_commodity and positions and options:
+        df_positions = get_position_data(
+            report_type, selected_market_commodity, positions, year
+        )
 
-        return figure
+        fig_positions = create_chart_figure(df_positions, selected_market_commodity)
+        if add_price and ticker:
+            print("adding price line")
+            print(add_price)
 
-    return {}
+            fig_positions = add_price_chart(fig_positions, df_price, ticker)
+    else:
+        fig_positions = {}
+
+    return fig_price, fig_positions
 
 
-def load_date(selected, position, year, options, chart_ticker, add_price):
-    start_year, end_year = year
+def get_price_data(ticker, year):
+    print("Download: ", ticker)
+    start_date = f"{year[0]}-01-01" if year != [0, 0] else None
+    end_date = f"{year[1]}-12-31" if year != [0, 0] else None
+    return yf.download(ticker, start_date, end_date, "1wk")["Close"].to_frame()
 
-    conn = sqlite3.connect("data.db")
-    return {}
+
+def create_chart_figure(df_price, ticker):
+    print(df_price.columns)
+    data = []
+
+    for col in df_price.columns:
+        trace = go.Scatter(x=df_price.index, y=df_price[col], mode="lines", name=col)
+        data.append(trace)
+    print("Chart created")
+    # `data = [go.Scatter(x=df_price.index, y=df_price[col], mode="lines", name=col) for col in df_price.columns]
+
+    layout = {
+        "title": f"Price Chart for {ticker}",
+        "xaxis": {"title": "Date"},
+        "yaxis": {"title": "Price (USD)"},
+        "showlegend": True,
+        "legend": {"x": 0.02, "y": 0.98},
+        "margin": {"l": 60, "r": 10, "t": 50, "b": 60},
+        "hovermode": "x",
+    }
+
+    return {"data": data, "layout": layout}
+
+
+def add_price_chart(figure, data, ticker):
+    print(figure["data"])
+    trace = go.Scatter(
+        x=data.index, y=data["Close"], mode="lines", yaxis="y2", name=f"Price {ticker}"
+    )
+    print(trace)
+    figure["data"].append(trace)
+    figure["layout"]["yaxis2"] = {
+        "overlaying": "y",  # Nakładająca się na pierwszą oś y
+        "side": "right",  # Po prawej stronie
+        "title": "Price",  # Tytuł dla drugiej osi y
+        "showgrid": False,  # Wyłączenie siatki dla drugiej osi y
+    }
+    return figure
 
 
 if __name__ == "__main__":

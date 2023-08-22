@@ -7,7 +7,6 @@ import json
 
 def similarity_score(s1, s2):
     # Funkcja do obliczenia podobieństwa między napisami s1 i s2
-    print(f"Podobnosc: {s1} - {s2}")
     s1_lower = s1.lower()
     s2_lower = s2.lower()
     matcher = difflib.SequenceMatcher(None, s1_lower, s2_lower)

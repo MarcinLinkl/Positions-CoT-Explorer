@@ -51,5 +51,8 @@
     "Bitcoin USD": "BTC-USD",
     "Micro Bitcoin Futures": "MBT=F",
     "Australian Dollar Futures": "6A=F",
-    "AUD/USD": "AUDUSD=X"
+    "AUD/USD": "AUDUSD=X",
+    "Ethereum USD": "ETH-USD",
+    "Ether Futures": "ETH=F",
+    "Micro Ether Futures": "METH=F"
 }
