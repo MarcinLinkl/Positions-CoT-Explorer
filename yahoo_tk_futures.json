@@ -54,5 +54,6 @@
     "AUD/USD": "AUDUSD=X",
     "Ethereum USD": "ETH-USD",
     "Ether Futures": "ETH=F",
-    "Micro Ether Futures": "METH=F"
+    "Micro Ether Futures": "METH=F",
+    "Cash-settled Butter": "CB=F"
 }

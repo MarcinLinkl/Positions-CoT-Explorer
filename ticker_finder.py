@@ -17,7 +17,10 @@ def find_similar_ticker(commodity_selected, data):
     print("Sprawdzam dopasowanie...")
     print("Wybrano: ", commodity_selected)
     commodity_selected = (
-        commodity_selected.split(" - ")[0].replace("index", "").replace("-", " ")
+        commodity_selected.split(" - ")[0]
+        .replace("index", "")
+        .replace("futures", "")
+        .replace("-", " ")
     )
     commodity_selected = " ".join(commodity_selected.split()[:3])
     print("Cleaned name: ", commodity_selected)

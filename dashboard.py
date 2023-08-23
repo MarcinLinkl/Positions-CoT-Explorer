@@ -313,21 +313,19 @@ def toggle_price_graph_visibility(chart_together_value):
 
 
 def get_legacy_futures(selected_market_commodity, position_type, year):
-    print("getting ", selected_market_commodity)
     columns = ", ".join(
         [f"{pos_type}_long_all, {pos_type}_short_all" for pos_type in position_type]
     ).replace("tot_rept_positions_short_all", "tot_rept_positions_short")
-    print(columns)
     query = f"""
-            SELECT report_date_as_yyyy_mm_dd, {columns}
-            FROM report_legacy_futures_only
-            WHERE market_and_exchange_names = '{selected_market_commodity}'
-            AND report_date_as_yyyy_mm_dd BETWEEN '{year[0]}-01-01' AND '{year[1]}-12-31'
-            ORDER BY 1 ASC
-        """
-    print(query)
+    SELECT report_date_as_yyyy_mm_dd, {columns}
+    FROM report_legacy_futures_only
+    WHERE market_and_exchange_names = ?
+    AND report_date_as_yyyy_mm_dd BETWEEN ? AND ?
+    ORDER BY 1 ASC
+    """
     conn = sqlite3.connect("data.db")
-    df_data = pd.read_sql(query, conn)
+    params = (selected_market_commodity, f"{year[0]}-01-01", f"{year[1]}-12-31")
+    df_data = pd.read_sql(query, conn, params=params)
     conn.close()
 
     df_data = df_data.rename(
@@ -344,9 +342,7 @@ def get_legacy_futures(selected_market_commodity, position_type, year):
 
 
 def get_position_data(report_type, selected_market_commodity, position_type, year):
-    print("getting ", report_type)
     if report_type == "report_legacy_futures_only":
-        print("starting report_legacy_futures_only")
         return get_legacy_futures(selected_market_commodity, position_type, year)
 
 
@@ -364,45 +360,34 @@ def get_position_data(report_type, selected_market_commodity, position_type, yea
 def update_graphs_callback(
     report_type, selected_market_commodity, positions, year, options, ticker, add_price
 ):
+    fig_price, fig_positions = {}, {}
     if ticker:
         df_price = get_price_data(ticker, year)
-        fig_price = create_chart_figure(df_price, ticker)
-    else:
-        fig_price = {}
+        fig_price = create_figure(df_price, ticker)
+
     if selected_market_commodity and positions and options:
         df_positions = get_position_data(
             report_type, selected_market_commodity, positions, year
         )
+        fig_positions = create_figure(df_positions, selected_market_commodity)
 
-        fig_positions = create_chart_figure(df_positions, selected_market_commodity)
         if add_price and ticker:
-            print("adding price line")
-            print(add_price)
-
             fig_positions = add_price_chart(fig_positions, df_price, ticker)
-    else:
-        fig_positions = {}
 
     return fig_price, fig_positions
 
 
 def get_price_data(ticker, year):
-    print("Download: ", ticker)
     start_date = f"{year[0]}-01-01" if year != [0, 0] else None
     end_date = f"{year[1]}-12-31" if year != [0, 0] else None
     return yf.download(ticker, start_date, end_date, "1wk")["Close"].to_frame()
 
 
-def create_chart_figure(df_price, ticker):
-    print(df_price.columns)
+def create_figure(df_price, ticker):
     data = []
-
     for col in df_price.columns:
         trace = go.Scatter(x=df_price.index, y=df_price[col], mode="lines", name=col)
         data.append(trace)
-    print("Chart created")
-    # `data = [go.Scatter(x=df_price.index, y=df_price[col], mode="lines", name=col) for col in df_price.columns]
-
     layout = {
         "title": f"Price Chart for {ticker}",
         "xaxis": {"title": "Date"},
@@ -417,11 +402,10 @@ def create_chart_figure(df_price, ticker):
 
 
 def add_price_chart(figure, data, ticker):
-    print(figure["data"])
     trace = go.Scatter(
         x=data.index, y=data["Close"], mode="lines", yaxis="y2", name=f"Price {ticker}"
     )
-    print(trace)
+
     figure["data"].append(trace)
     figure["layout"]["yaxis2"] = {
         "overlaying": "y",  # Nakładająca się na pierwszą oś y
