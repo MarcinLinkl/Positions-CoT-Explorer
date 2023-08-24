@@ -55,5 +55,6 @@
     "Ethereum USD": "ETH-USD",
     "Ether Futures": "ETH=F",
     "Micro Ether Futures": "METH=F",
-    "Cash-settled Butter": "CB=F"
+    "Cash-settled Butter": "CB=F",
+    "Bloomberg Commodity Index Futures": "AW=F"
 }

@@ -3,28 +3,23 @@ import sqlite3
 from datetime import date
 import json
 
+
 def load_yahoo_tk_data():
     with open("yahoo_tk_futures.json") as f:
         yahoo_tk_data = json.load(f)
     return yahoo_tk_data
 
 
-def get_chart_price_opts(list_of_commodity):
-    return [
-            {"label": f"Price of {commodity.lower()}", "value": ticker}
-            for commodity, ticker in list_of_commodity.items()
-        ]
-
-
 def get_reports_opts():
-    query = (
-        f"SELECT name FROM sqlite_schema WHERE type='table' AND name like 'report_%'"
-    )
-    conn = sqlite3.connect("data.db")
-    tables = pd.read_sql(query, conn)["name"]
-    conn.close()
+    with sqlite3.connect("data.db") as conn:
+        query = (
+            "SELECT name FROM sqlite_schema WHERE type='table' AND name like 'report_%'"
+        )
+        tables = pd.read_sql(query, conn)["name"]
+
     labels = [name.replace("report_", "").replace("_", " ").title() for name in tables]
     values = [name for name in tables]
+
     return [{"label": label, "value": value} for label, value in zip(labels, values)]
 
 
@@ -40,7 +35,7 @@ def get_commodities_opts(table):
     return dropdown_options
 
 
-def get_market_opts(selected_commodity,report_table):
+def get_market_opts(selected_commodity, report_table):
     # Pobranie unikalnych towarów z bazy danych do listy wyboru
     conn = sqlite3.connect("data.db")
     query_unique_commodities = f'SELECT DISTINCT market_and_exchange_names FROM {report_table} where yyyy_report_week_ww like "%{date.today().year}%" AND commodity_name="{selected_commodity}" ORDER BY 1 ASC'
@@ -54,7 +49,6 @@ def get_market_opts(selected_commodity,report_table):
     ]
 
     return dropdown_options
-
 
 
 def get_slider_range_dates(comodity):
@@ -76,10 +70,3 @@ def get_slider_opts(selected_commodity):
     marks = {year: str(year) for year in range(min_date, max_date + 1, 2)}
     # Zwracamy nowy zakres slidera oraz znaczniki
     return min_date, max_date, [min_date, max_date], marks
-
-
-
-
-
-
-

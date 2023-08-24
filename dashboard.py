@@ -6,11 +6,22 @@ from utils import *
 from ticker_finder import *
 import sqlite3
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objs as go
+
 
 yahoo_tk_data = load_yahoo_tk_data()
 
+positions_types_futures_only = {
+    "comm_positions": "Commercial",
+    "noncomm_positions": "Non-Commercial",
+    "nonrept_positions": "Non-Reportable",
+    "tot_rept_positions": "Total Reportable",
+}
+
+options_sides = [
+    "net",
+    "long",
+    "short",
+]
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SUPERHERO])
 
 app.layout = dbc.Container(
@@ -87,7 +98,10 @@ app.layout = dbc.Container(
                         dbc.Label("Select a price chart: ", id="price-chart-label"),
                         dcc.Dropdown(
                             id="chart-price-dropdown",
-                            options=get_chart_price_opts(yahoo_tk_data),
+                            options=[
+                                {"label": f"Price of {i.lower()}", "value": j}
+                                for i, j in yahoo_tk_data.items()
+                            ],
                             placeholder="Select price",
                             optionHeight=50,
                             className="dash-bootstrap",
@@ -102,19 +116,8 @@ app.layout = dbc.Container(
                         dcc.Dropdown(
                             id="position-type",
                             options=[
-                                {"label": "Commercial", "value": "comm_positions"},
-                                {
-                                    "label": "Non-Commercial",
-                                    "value": "noncomm_positions",
-                                },
-                                {
-                                    "label": "Non-Reportable",
-                                    "value": "nonrept_positions",
-                                },
-                                {
-                                    "label": "Total Reportable",
-                                    "value": "tot_rept_positions",
-                                },
+                                {"label": j, "value": i}
+                                for i, j in positions_types_futures_only.items()
                             ],
                             value=["noncomm_positions"],
                             multi=True,
@@ -199,11 +202,9 @@ app.layout = dbc.Container(
                     dbc.Checklist(
                         id="show-option",
                         options=[
-                            {"label": "Net", "value": "net"},
-                            {"label": "Long", "value": "long"},
-                            {"label": "Short", "value": "short"},
+                            {"label": i.capitalize(), "value": i} for i in options_sides
                         ],
-                        value=["net"],
+                        value=[options_sides[0]],
                         inline=True,
                         labelStyle={
                             "display": "inline-block",
@@ -220,11 +221,17 @@ app.layout = dbc.Container(
         dbc.Row(
             [
                 dbc.Col(
-                    dcc.Graph(id="price-graph", className="col-12 my-2"),
+                    dcc.Graph(
+                        id="price-graph",
+                        className="col-12 my-2",
+                    ),
                     className="col-12",
                 ),
                 dbc.Col(
-                    dcc.Graph(id="commodity-graph", className="col-12 my-2"),
+                    dcc.Graph(
+                        id="commodity-graph",
+                        className="col-12 my-2",
+                    ),
                     className="col-12",
                 ),
             ],
@@ -312,9 +319,10 @@ def toggle_price_graph_visibility(chart_together_value):
     return {"display": "none"} if chart_together_value != [True] else {}
 
 
-def get_legacy_futures(selected_market_commodity, position_type, year):
+def get_legacy_futures(selected_market_commodity, years):
+    position_types = list(positions_types_futures_only.keys())
     columns = ", ".join(
-        [f"{pos_type}_long_all, {pos_type}_short_all" for pos_type in position_type]
+        [f"{pos_type}_long_all, {pos_type}_short_all" for pos_type in position_types]
     ).replace("tot_rept_positions_short_all", "tot_rept_positions_short")
     query = f"""
     SELECT report_date_as_yyyy_mm_dd, {columns}
@@ -324,8 +332,10 @@ def get_legacy_futures(selected_market_commodity, position_type, year):
     ORDER BY 1 ASC
     """
     conn = sqlite3.connect("data.db")
-    params = (selected_market_commodity, f"{year[0]}-01-01", f"{year[1]}-12-31")
+    params = (selected_market_commodity, f"{years[0]}-01-01", f"{years[1]}-12-31")
+
     df_data = pd.read_sql(query, conn, params=params)
+
     conn.close()
 
     df_data = df_data.rename(
@@ -334,16 +344,16 @@ def get_legacy_futures(selected_market_commodity, position_type, year):
     df_data.rename(columns={"report_date_as_yyyy_mm_dd": "Date"}, inplace=True)
     df_data.set_index("Date", inplace=True)
     df_data.index = pd.to_datetime(df_data.index)
-    for pos_type in position_type:
-        df_data[f"{pos_type}_net"] = pd.to_numeric(
+    for pos_type in position_types:
+        df_data[f"{pos_type}_net_all"] = pd.to_numeric(
             df_data[f"{pos_type}_long_all"]
         ) - pd.to_numeric(df_data[f"{pos_type}_short_all"], errors="coerce")
     return df_data
 
 
-def get_position_data(report_type, selected_market_commodity, position_type, year):
+def get_position_data(report_type, selected_market_commodity, years):
     if report_type == "report_legacy_futures_only":
-        return get_legacy_futures(selected_market_commodity, position_type, year)
+        return get_legacy_futures(selected_market_commodity, years)
 
 
 @app.callback(
@@ -358,21 +368,32 @@ def get_position_data(report_type, selected_market_commodity, position_type, yea
     Input("add-price-line", "value"),
 )
 def update_graphs_callback(
-    report_type, selected_market_commodity, positions, year, options, ticker, add_price
+    report_type, market_commodity, positions, years, options, ticker, add_price
 ):
+    df_price, df_positions, merged_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
     fig_price, fig_positions = {}, {}
     if ticker:
-        df_price = get_price_data(ticker, year)
-        fig_price = create_figure(df_price, ticker)
+        df_price = get_price_data(ticker, years)
+        print(df_price.head())
+        fig_price = create_figure_positions(df_price, ticker, positions, options)
+    if market_commodity:
+        df_positions = get_position_data(report_type, market_commodity, years)
 
-    if selected_market_commodity and positions and options:
-        df_positions = get_position_data(
-            report_type, selected_market_commodity, positions, year
-        )
-        fig_positions = create_figure(df_positions, selected_market_commodity)
+    if ticker and market_commodity and positions and options:
+        df_price_weekly = df_price.resample("W").mean()
 
-        if add_price and ticker:
-            fig_positions = add_price_chart(fig_positions, df_price, ticker)
+        merged_df = pd.concat([df_price_weekly, df_positions], axis=1)
+        # merged_df = merged_df.interpolate()
+        merged_df = merged_df.fillna(method="ffill")
+        print(merged_df)
+        if add_price:
+            fig_positions = create_figure_positions(
+                merged_df, market_commodity, positions, options
+            )
+        else:
+            fig_positions = create_figure_positions(
+                df_positions, market_commodity, positions, options
+            )
 
     return fig_price, fig_positions
 
@@ -383,38 +404,57 @@ def get_price_data(ticker, year):
     return yf.download(ticker, start_date, end_date, "1wk")["Close"].to_frame()
 
 
-def create_figure(df_price, ticker):
-    data = []
-    for col in df_price.columns:
-        trace = go.Scatter(x=df_price.index, y=df_price[col], mode="lines", name=col)
-        data.append(trace)
-    layout = {
-        "title": f"Price Chart for {ticker}",
-        "xaxis": {"title": "Date"},
-        "yaxis": {"title": "Price (USD)"},
-        "showlegend": True,
-        "legend": {"x": 0.02, "y": 0.98},
-        "margin": {"l": 60, "r": 10, "t": 50, "b": 60},
-        "hovermode": "x",
+def create_figure_positions(df, name, positions, options):
+    fig = {
+        "data": [],
+        "layout": {
+            "margin": {"l": 30, "r": 30, "t": 30, "b": 30},  # Marginesy wokół wykresu
+            "title": f"{name}",  # Tytuł wykresu
+            "yaxis": {"title": "Pozycje", "y": "-0.5"},  # Etykieta osi Y
+            "legend": {"orientation": "h", "y": 1},  # Legenda wykresu (poziomo)
+            # "legend": {"orientation": "v", "y": 1},  # Legenda wykresu (pionowo)
+        },
     }
 
-    return {"data": data, "layout": layout}
+    cols_selected = [f"{pos}_{opt}_all" for pos in positions for opt in options]
+    print(cols_selected)
+    print([col for col in df.columns])
+    for col in df.columns:
+        if col == "Close":
+            fig["data"].append(
+                {
+                    "x": df.index,
+                    "y": df[col],
+                    "type": "line",
+                    "name": "Price $",
+                    "yaxis": "y2",  # Dodanie drugiej osi y dla ceny towaru
+                    # "line": {"width": 1, "color": "firebrick", "dash": "line"},
+                }
+            )
+            fig["layout"]["yaxis2"] = {
+                "overlaying": "y",  # Nakładająca się na pierwszą oś y
+                "side": "right",  # Po prawej stronie
+                "title": "Price",  # Tytuł dla drugiej osi y
+                "showgrid": False,  # Wyłączenie siatki dla drugiej osi y
+            }
+        elif col in cols_selected:
+            print(col, "True")
+            fig["data"].append(
+                {
+                    "x": df.index,
+                    "y": df[col],
+                    "type": "line",
+                    "name": col,
+                    "line": {"width": 1},
+                    "yaxis": "y1",
+                }
+            )
 
-
-def add_price_chart(figure, data, ticker):
-    trace = go.Scatter(
-        x=data.index, y=data["Close"], mode="lines", yaxis="y2", name=f"Price {ticker}"
-    )
-
-    figure["data"].append(trace)
-    figure["layout"]["yaxis2"] = {
-        "overlaying": "y",  # Nakładająca się na pierwszą oś y
-        "side": "right",  # Po prawej stronie
-        "title": "Price",  # Tytuł dla drugiej osi y
-        "showgrid": False,  # Wyłączenie siatki dla drugiej osi y
-    }
-    return figure
+    # fig["layout"]["xaxis"] = {
+    #     "range": [df.index[0], df.index[-1]],
+    # }
+    return fig
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=2070)
+    app.run(debug=True, port=2077)
