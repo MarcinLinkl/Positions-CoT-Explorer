@@ -2,6 +2,20 @@ import pandas as pd
 import sqlite3
 from datetime import date
 import json
+import re
+
+
+def rep_prefix(value):
+    """
+    Usuwa sufiksy "_futures_only" oraz "_combined" z podanego raportu legacy.
+
+    Parametry:
+    value (str): Łańcuch znaków reprezentujący raport legacy.
+
+    Zwraca:
+    str: Raport legacy po usunięciu sufiksów "_futures_only" oraz "_combined".
+    """
+    return re.sub(r"(_futures_only|_combined)$", "", value)
 
 
 def load_yahoo_tk_data():

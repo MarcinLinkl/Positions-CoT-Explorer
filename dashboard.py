@@ -6,22 +6,11 @@ from utils import *
 from ticker_finder import *
 import sqlite3
 import pandas as pd
-
+from reports_definitions import positions_by_report, reports_cols
 
 yahoo_tk_data = load_yahoo_tk_data()
 
-positions_types_futures_only = {
-    "comm_positions": "Commercial",
-    "noncomm_positions": "Non-Commercial",
-    "nonrept_positions": "Non-Reportable",
-    "tot_rept_positions": "Total Reportable",
-}
 
-options_sides = [
-    "net",
-    "long",
-    "short",
-]
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SUPERHERO])
 
 app.layout = dbc.Container(
@@ -115,11 +104,6 @@ app.layout = dbc.Container(
                         dbc.Label("Position types : "),
                         dcc.Dropdown(
                             id="position-type",
-                            options=[
-                                {"label": j, "value": i}
-                                for i, j in positions_types_futures_only.items()
-                            ],
-                            value=["noncomm_positions"],
                             multi=True,
                             placeholder="Select a position type",
                             className="dash-bootstrap",
@@ -202,9 +186,10 @@ app.layout = dbc.Container(
                     dbc.Checklist(
                         id="show-option",
                         options=[
-                            {"label": i.capitalize(), "value": i} for i in options_sides
+                            {"label": i.capitalize(), "value": i}
+                            for i in ["net", "long", "short"]
                         ],
-                        value=[options_sides[0]],
+                        value=["net"],
                         inline=True,
                         labelStyle={
                             "display": "inline-block",
@@ -240,6 +225,29 @@ app.layout = dbc.Container(
     ],
     fluid=True,
 )
+
+
+@app.callback(
+    Output("position-type", "options"),
+    Output("position-type", "value"),
+    Input("report-dropdown", "value"),
+)
+def update_position_types(report):
+    if report is None:
+        return [], []
+    return get_positions_types_opts(report)
+
+
+def get_positions_types_opts(report):
+    selected_report = rep_prefix(report)
+    # report_legacy_futures_only
+    return (
+        [
+            {"label": j, "value": i}
+            for i, j in positions_by_report[selected_report].items()
+        ],
+        [list(positions_by_report[selected_report].keys())[0]],
+    )
 
 
 @app.callback(
@@ -314,23 +322,37 @@ def toggle_price_graph_visibility(chart_together_value):
         chart_together_value (list): A list containing a single boolean value indicating whether the price graph should be displayed together with the chart.
 
     Returns:
-        dict: A dictionary representing the style of the "price-graph" output. If the value of "chart_together_value" is not [True], the style will be {"display": "none"}. Otherwise, an empty dictionary will be returned.
+        dict: A dictionary representing the style of the "price-graph" output. If the value of "chart_toge  ther_value" is not [True], the style will be {"display": "none"}. Otherwise, an empty dictionary will be returned.
     """
     return {"display": "none"} if chart_together_value != [True] else {}
 
 
-def get_legacy_futures(selected_market_commodity, years):
-    position_types = list(positions_types_futures_only.keys())
-    columns = ", ".join(
-        [f"{pos_type}_long_all, {pos_type}_short_all" for pos_type in position_types]
-    ).replace("tot_rept_positions_short_all", "tot_rept_positions_short")
+def rename_columns(df):
+    print("rename columns")
+    for column in df.columns:
+        if column.endswith("short"):
+            new_column = column.replace("short", "short_all")
+            df.rename(columns={column: new_column}, inplace=True)
+        elif column.endswith("long"):
+            new_column = column.replace("long", "long_all")
+            df.rename(columns={column: new_column}, inplace=True)
+        elif column == "swap__positions_short_all":
+            df.rename(columns={column: column.replace("__", "_")}, inplace=True)
+    return df
+
+
+def get_position_data(report_type, selected_market_commodity, years):
+    columns = list(reports_cols[rep_prefix(report_type)]["positions"].keys())
+
+    column_str = ", ".join(columns)
     query = f"""
-    SELECT report_date_as_yyyy_mm_dd, {columns}
-    FROM report_legacy_futures_only
+    SELECT report_date_as_yyyy_mm_dd, {column_str}
+    FROM {report_type}
     WHERE market_and_exchange_names = ?
     AND report_date_as_yyyy_mm_dd BETWEEN ? AND ?
     ORDER BY 1 ASC
     """
+    print(query)
     conn = sqlite3.connect("data.db")
     params = (selected_market_commodity, f"{years[0]}-01-01", f"{years[1]}-12-31")
 
@@ -338,22 +360,21 @@ def get_legacy_futures(selected_market_commodity, years):
 
     conn.close()
 
-    df_data = df_data.rename(
-        columns={"tot_rept_positions_short": "tot_rept_positions_short_all"}
-    )
+    print(df_data)
+
     df_data.rename(columns={"report_date_as_yyyy_mm_dd": "Date"}, inplace=True)
     df_data.set_index("Date", inplace=True)
     df_data.index = pd.to_datetime(df_data.index)
-    for pos_type in position_types:
+    df_data = rename_columns(df_data)
+
+    pos_types = positions_by_report[rep_prefix(report_type)]
+    for pos_type in pos_types:
+        print("position: ", pos_type)
         df_data[f"{pos_type}_net_all"] = pd.to_numeric(
             df_data[f"{pos_type}_long_all"]
         ) - pd.to_numeric(df_data[f"{pos_type}_short_all"], errors="coerce")
+    print("done... postions data fetche from ", report_type)
     return df_data
-
-
-def get_position_data(report_type, selected_market_commodity, years):
-    if report_type == "report_legacy_futures_only":
-        return get_legacy_futures(selected_market_commodity, years)
 
 
 @app.callback(
@@ -379,21 +400,22 @@ def update_graphs_callback(
     if market_commodity:
         df_positions = get_position_data(report_type, market_commodity, years)
 
-    if ticker and market_commodity and positions and options:
+    if ticker and market_commodity:
         df_price_weekly = df_price.resample("W").mean()
 
         merged_df = pd.concat([df_price_weekly, df_positions], axis=1)
         # merged_df = merged_df.interpolate()
         merged_df = merged_df.fillna(method="ffill")
         print(merged_df)
-        if add_price:
-            fig_positions = create_figure_positions(
-                merged_df, market_commodity, positions, options
-            )
-        else:
-            fig_positions = create_figure_positions(
-                df_positions, market_commodity, positions, options
-            )
+        if positions and options:
+            if add_price:
+                fig_positions = create_figure_positions(
+                    merged_df, market_commodity, positions, options
+                )
+            else:
+                fig_positions = create_figure_positions(
+                    df_positions, market_commodity, positions, options
+                )
 
     return fig_price, fig_positions
 

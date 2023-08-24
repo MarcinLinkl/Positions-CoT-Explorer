@@ -160,6 +160,9 @@ cython_debug/
 #.idea/
 
 # db
+data.db
+
+#my crash
 check.py
 old-*.py
-data.db
+_*
