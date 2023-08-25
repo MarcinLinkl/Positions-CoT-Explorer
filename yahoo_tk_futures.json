@@ -56,5 +56,11 @@
     "Ether Futures": "ETH=F",
     "Micro Ether Futures": "METH=F",
     "Cash-settled Butter": "CB=F",
-    "Bloomberg Commodity Index Futures": "AW=F"
+    "Bloomberg Commodity Index Futures": "AW=F",
+    "US Dollar/USDX": "DX-Y.NYB",
+    "CBOE Volatility Index": "^VIX",
+    "iShares MSCI Poland ETF (EPOL)": "EPOL",
+    "iShares MSCI China ETF (MCHI)": "MCHI",
+    "S&P 500 INDEX": "^SPX",
+    "NASDAQ Composite": "^IXIC"
 }

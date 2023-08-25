@@ -10,7 +10,6 @@ from reports_definitions import positions_by_report, reports_cols
 
 yahoo_tk_data = load_yahoo_tk_data()
 
-
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SUPERHERO])
 
 app.layout = dbc.Container(
@@ -161,12 +160,12 @@ app.layout = dbc.Container(
                         switch=True,
                         className="text-center",
                     ),
-                    className="col-lg-3 col-6 my-2",
+                    className="col-lg-2 col-3 my-2",
                 ),
                 dbc.Col(
                     dbc.Button(
                         "Show correlations",
-                        id="submit-button",
+                        id="show-corr",
                         color="success",
                         # className="custom-button",
                         # className="col-2 text-center",  # zmieniono na col-2
@@ -177,10 +176,29 @@ app.layout = dbc.Container(
                             "text-align": "center",
                             "margin": "0",
                             "padding": "0",
-                            "width": "calc(50%)",
+                            "width": "calc(90%)",
                         },
                     ),
-                    className="col-lg-3 col-6 my-2 text-center",
+                    className="col-lg-2 col-3 my-2 text-center",
+                ),
+                dbc.Col(
+                    dbc.Button(
+                        "Hide correlations",
+                        id="hide-corr",
+                        color="success",
+                        # className="custom-button",
+                        # className="col-2 text-center",  # zmieniono na col-2
+                        style={
+                            "display": "inline-block",
+                            "max-height": "30px",
+                            "border-radius": "15px",
+                            "text-align": "center",
+                            "margin": "0",
+                            "padding": "0",
+                            "width": "calc(90%)",
+                        },
+                    ),
+                    className="col-lg-2 col-3 my-2 text-center",
                 ),
                 dbc.Col(
                     dbc.Checklist(
@@ -199,12 +217,18 @@ app.layout = dbc.Container(
                         },
                         className="text-center",
                     ),
-                    className="col-lg-3 col-6 my-2",
+                    className="col-lg-3 col-3 my-2",
                 ),
             ]
         ),
         dbc.Row(
             [
+                dbc.Col(
+                    dbc.Card(
+                        [html.Div(id="correlation-card", style={"display": "none"})],
+                    ),
+                    className="col-7 my-2 mx-auto text-center",
+                ),
                 dbc.Col(
                     dcc.Graph(
                         id="price-graph",
@@ -228,6 +252,27 @@ app.layout = dbc.Container(
 
 
 @app.callback(
+    Output("correlation-card", "style"),
+    Input("show-corr", "n_clicks"),
+    Input("hide-corr", "n_clicks"),
+)
+def toggle_correlation_card(show_clicks, hide_clicks):
+    ctx = dash.callback_context
+
+    if not ctx.triggered:
+        return {"display": "none"}  # Domyślnie ukryj kartę
+
+    button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+    if button_id == "show-corr" and show_clicks:
+        return {"display": "block"}  # Pokaż kartę po kliknięciu "Show Correlation Card"
+    elif button_id == "hide-corr" and hide_clicks:
+        return {"display": "none"}  # Ukryj kartę po kliknięciu "Hide Correlation Card"
+    else:
+        return dash.no_update  # Nie zmieniaj stanu karty
+
+
+@app.callback(
     Output("position-type", "options"),
     Output("position-type", "value"),
     Input("report-dropdown", "value"),
@@ -235,12 +280,7 @@ app.layout = dbc.Container(
 def update_position_types(report):
     if report is None:
         return [], []
-    return get_positions_types_opts(report)
-
-
-def get_positions_types_opts(report):
     selected_report = rep_prefix(report)
-    # report_legacy_futures_only
     return (
         [
             {"label": j, "value": i}
@@ -338,13 +378,29 @@ def rename_columns(df):
             df.rename(columns={column: new_column}, inplace=True)
         elif column == "swap__positions_short_all":
             df.rename(columns={column: column.replace("__", "_")}, inplace=True)
+        elif column.endswith("Long_All_NoCIT"):
+            df.rename(
+                columns={column: column.replace("Long_All_NoCIT", "NoCit_long_all")},
+                inplace=True,
+            )
+        elif column.endswith("Short_All_NoCIT"):
+            df.rename(
+                columns={column: column.replace("Short_All_NoCIT", "NoCit_short_all")},
+                inplace=True,
+            )
+        elif column.endswith("long_all_nocit"):
+            df.rename(
+                columns={column: column.replace("long_all_nocit", "NoCit_long_all")},
+                inplace=True,
+            )
+
     return df
 
 
 def get_position_data(report_type, selected_market_commodity, years):
-    columns = list(reports_cols[rep_prefix(report_type)]["positions"].keys())
-
-    column_str = ", ".join(columns)
+    column_str = ", ".join(
+        list(reports_cols[rep_prefix(report_type)]["positions"].keys())
+    )
     query = f"""
     SELECT report_date_as_yyyy_mm_dd, {column_str}
     FROM {report_type}
@@ -368,18 +424,21 @@ def get_position_data(report_type, selected_market_commodity, years):
     df_data = rename_columns(df_data)
 
     pos_types = positions_by_report[rep_prefix(report_type)]
+    print(pos_types)
     for pos_type in pos_types:
         print("position: ", pos_type)
         df_data[f"{pos_type}_net_all"] = pd.to_numeric(
             df_data[f"{pos_type}_long_all"]
         ) - pd.to_numeric(df_data[f"{pos_type}_short_all"], errors="coerce")
-    print("done... postions data fetche from ", report_type)
+    print("done... postions data fetch from ", report_type)
+    print(df_data)
     return df_data
 
 
 @app.callback(
     Output("price-graph", "figure"),
     Output("commodity-graph", "figure"),
+    Output("correlation-card", "children"),
     Input("report-dropdown", "value"),
     Input("market-and-exchange-names-dropdown", "value"),
     Input("position-type", "value"),
@@ -391,33 +450,44 @@ def get_position_data(report_type, selected_market_commodity, years):
 def update_graphs_callback(
     report_type, market_commodity, positions, years, options, ticker, add_price
 ):
-    df_price, df_positions, merged_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    df_price, df_positions = pd.DataFrame(), pd.DataFrame()
     fig_price, fig_positions = {}, {}
-    if ticker:
-        df_price = get_price_data(ticker, years)
-        print(df_price.head())
-        fig_price = create_figure_positions(df_price, ticker, positions, options)
+    correlation_text = []
     if market_commodity:
         df_positions = get_position_data(report_type, market_commodity, years)
-
-    if ticker and market_commodity:
-        df_price_weekly = df_price.resample("W").mean()
-
-        merged_df = pd.concat([df_price_weekly, df_positions], axis=1)
-        # merged_df = merged_df.interpolate()
-        merged_df = merged_df.fillna(method="ffill")
-        print(merged_df)
-        if positions and options:
-            if add_price:
-                fig_positions = create_figure_positions(
-                    merged_df, market_commodity, positions, options
+    if ticker:
+        df_price = get_price_data(ticker, years)
+        fig_price = create_figure(df_price, ticker, positions, options, True)
+        if market_commodity:
+            df_positions = pd.concat(
+                [df_price.resample("W").mean(), df_positions], axis=1
+            )
+            # df_positions = df_positions.interpolate()
+            df_positions = df_positions.fillna(method="ffill")
+            # Calculate correlations between "Close" and other columns
+            correlations = df_positions.corr()["Close"].drop("Close")
+            sorted_correlations = correlations.abs().sort_values(ascending=False)
+            correlation_text = [
+                html.P(
+                    f"Correlation between {ticker} and '{col}' {'positive: +' if correlations[col] >= 0 else 'negative: -'}{correlation:.2f}",
+                    style={"margin": "5px"},
                 )
-            else:
-                fig_positions = create_figure_positions(
-                    df_positions, market_commodity, positions, options
-                )
+                for col, correlation in sorted_correlations.items()
+            ]
 
-    return fig_price, fig_positions
+    if market_commodity and positions and options:
+        if add_price:
+            fig_positions = create_figure(
+                df_positions, market_commodity, positions, options, True
+            )
+        else:
+            fig_positions = create_figure(
+                df_positions, market_commodity, positions, options, False
+            )
+
+    # Generate the formatted correlation text
+
+    return fig_price, fig_positions, correlation_text
 
 
 def get_price_data(ticker, year):
@@ -426,7 +496,7 @@ def get_price_data(ticker, year):
     return yf.download(ticker, start_date, end_date, "1wk")["Close"].to_frame()
 
 
-def create_figure_positions(df, name, positions, options):
+def create_figure(df, name, positions, options, price_chart=True):
     fig = {
         "data": [],
         "layout": {
@@ -434,7 +504,6 @@ def create_figure_positions(df, name, positions, options):
             "title": f"{name}",  # Tytuł wykresu
             "yaxis": {"title": "Pozycje", "y": "-0.5"},  # Etykieta osi Y
             "legend": {"orientation": "h", "y": 1},  # Legenda wykresu (poziomo)
-            # "legend": {"orientation": "v", "y": 1},  # Legenda wykresu (pionowo)
         },
     }
 
@@ -442,7 +511,7 @@ def create_figure_positions(df, name, positions, options):
     print(cols_selected)
     print([col for col in df.columns])
     for col in df.columns:
-        if col == "Close":
+        if col == "Close" and price_chart:
             fig["data"].append(
                 {
                     "x": df.index,
@@ -471,10 +540,6 @@ def create_figure_positions(df, name, positions, options):
                     "yaxis": "y1",
                 }
             )
-
-    # fig["layout"]["xaxis"] = {
-    #     "range": [df.index[0], df.index[-1]],
-    # }
     return fig
 
 

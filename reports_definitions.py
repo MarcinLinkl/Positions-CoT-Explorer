@@ -18,26 +18,26 @@ positions_by_report = {
     },
     "report_disaggregated": {
         "prod_merc_positions": "Producer/Merchant",
-        "swap_positions": "Swap",
+        "swap_positions": "Swap Dealers",
         "m_money_positions": "Managed Money",
         "other_rept_positions": "Other Reportable",
         "tot_rept_positions": "Total Reportable",
         "nonrept_positions": "Non-Reportable",
     },
     "report_tff": {
-        "dealer_positions_all": "Dealer",
+        "dealer_positions": "Dealer",
         "asset_mgr_positions": "Asset Manager",
         "lev_money_positions": "Leveraged Money",
         "other_rept_positions": "Other Reportable",
-        "tot_rept_positions_all": "Total Reportable",
-        "nonrept_positions_all": "Non-Reportable",
+        "tot_rept_positions": "Total Reportable",
+        "nonrept_positions": "Non-Reportable",
     },
-    "report_suplemental_cit": {
-        "NComm_Postions_All_NoCIT": "Non-Commercial - No CIT",
-        "comm_positions_all_nocit": "Commercial - No CIT",
-        "tot_rept_positions_all": "Total Reportable",
-        "nonrept_positions_all": "Non-Reportable",
-        "cit_positions_all": "CIT",
+    "report_supplemental_cit": {
+        "NComm_Postions_NoCit": "Non-Commercial - No CIT",
+        "comm_positions_NoCit": "Commercial - No CIT",
+        "tot_rept_positions": "Total Reportable",
+        "nonrept_positions": "Non-Reportable",
+        "cit_positions": "CIT",
     },
 }
 
