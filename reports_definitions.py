@@ -8,36 +8,160 @@ reports_tables = {
     "report_suplemental_cit": "report_suplemental_cit",
 }
 
+report_types_options = {
+    "report_legacy": {
+        "Commercial": {
+            "positions": "comm_positions",
+            "percentages": "pct_of_oi_comm",
+        },
+        "Non-Commercial": {
+            "positions": "noncomm_positions",
+            "percentages": "pct_of_oi_noncomm",
+        },
+        "Non-Reportable": {
+            "positions": "nonrept_positions",
+            "percentages": "pct_of_oi_nonrept",
+        },
+        "Total Reportable": {
+            "positions": "tot_rept_positions",
+            "percentages": "pct_of_oi_tot_rept",
+        },
+    },
+    "report_supplemental_cit": {
+        "Non-Commercial - No CIT": {
+            "positions": "NComm_Postions_NoCIT",
+            "percentages": "pct_oi_noncomm_nocit",
+        },
+        "Commercial - No CIT": {
+            "positions": "comm_positions_NoCIT",
+            "percentages": "pct_oi_comm_nocit",
+        },
+        "CIT": {
+            "positions": "cit_positions",
+            "percentages": "pct_oi_cit",
+        },
+        "Non-Reportable": {
+            "positions": "nonrept_positions",
+            "percentages": "pct_oi_nonrept_nocit",
+        },
+        "Total Reportable": {
+            "positions": "tot_rept_positions",
+            "percentages": "pct_oi_tot_rept_nocit",
+        },
+    },
+    # ... Kolejne raporty i ich sekcje można dodać tutaj
+}
 
 positions_by_report = {
     "report_legacy": {
-        "comm_positions": "Commercial",
-        "noncomm_positions": "Non-Commercial",
-        "nonrept_positions": "Non-Reportable",
-        "tot_rept_positions": "Total Reportable",
-    },
-    "report_disaggregated": {
-        "prod_merc_positions": "Producer/Merchant",
-        "swap_positions": "Swap Dealers",
-        "m_money_positions": "Managed Money",
-        "other_rept_positions": "Other Reportable",
-        "tot_rept_positions": "Total Reportable",
-        "nonrept_positions": "Non-Reportable",
-    },
-    "report_tff": {
-        "dealer_positions": "Dealer",
-        "asset_mgr_positions": "Asset Manager",
-        "lev_money_positions": "Leveraged Money",
-        "other_rept_positions": "Other Reportable",
-        "tot_rept_positions": "Total Reportable",
-        "nonrept_positions": "Non-Reportable",
+        "positions": {
+            "comm_positions": "Commercial",
+            "noncomm_positions": "Non-Commercial",
+            "nonrept_positions": "Non-Reportable",
+            "tot_rept_positions": "Total Reportable",
+        },
+        "concentration": {
+            "conc_gross_le_4_tdr": "Concentration Gross Le 4 Tdr",
+            "conc_gross_le_8_tdr": "Concentration Gross Le 8 Tdr",
+            "conc_net_le_4_tdr": "Concentration Net Le 4 Tdr",
+            "conc_net_le_8_tdr": "Concentration Net Le 8 Tdr",
+        },
+        "percentages": {
+            "pct_of_oi_noncomm": "Percentage of Open Interest (Non-Commercial)",
+            "pct_of_oi_comm": "Percentage of Open Interest (Commercial)",
+            "pct_of_oi_tot_rept": "Percentage of Open Interest (Total Report)",
+            "pct_of_oi_nonrept": "Percentage of Open Interest (Non-Reportable)",
+        },
+        "traders": {
+            "traders_noncomm": "Traders Non-Commercial",
+            "traders_comm": "Traders Commercial",
+            "traders_tot_rept": "Traders Total Report",
+        },
     },
     "report_supplemental_cit": {
-        "NComm_Postions_NoCit": "Non-Commercial - No CIT",
-        "comm_positions_NoCit": "Commercial - No CIT",
-        "tot_rept_positions": "Total Reportable",
-        "nonrept_positions": "Non-Reportable",
-        "cit_positions": "CIT",
+        "positions": {
+            "NComm_Postions_NoCIT": "Non-Commercial - No CIT",
+            "comm_positions_NoCIT": "Commercial - No CIT",
+            "tot_rept_positions": "Total Reportable",
+            "nonrept_positions": "Non-Reportable",
+            "cit_positions": "CIT",
+        },
+        "concentration": {},  # Add concentration data here
+        "percentages": {
+            "pct_oi_noncomm_nocit": "Percentage of Open Interest in Non-Commercial Positions No CIT",
+            "pct_oi_comm_nocit": "Percentage of Open Interest in Commercial Positions No CIT",
+            "pct_oi_tot_rept_nocit": "Percentage of Open Interest in Total Reportable Positions No CIT",
+            "pct_oi_nonrept_nocit": "Percentage of Open Interest in Non-Reportable Positions No CIT",
+            "pct_oi_cit": "Percentage of Open Interest in CIT Positions",
+        },
+        "traders": {
+            "Traders_NonComm_NoCIT": "Number of Traders with Non-Commercial Positions No CIT",
+            "traders_comm_nocit": "Number of Traders with Commercial Positions No CIT",
+            "Traders_Tot_Rept_NoCIT": "Number of Traders with Total Reportable Positions No CIT",
+            "traders_cit": "Number of Traders with CIT Positions",
+        },
+    },
+    "report_disaggregated": {
+        "positions": {
+            "prod_merc_positions": "Producer/Merchant",
+            "swap_positions": "Swap Dealers",
+            "m_money_positions": "Managed Money",
+            "other_rept_positions": "Other Reportable",
+            "tot_rept_positions": "Total Reportable",
+            "nonrept_positions": "Non-Reportable",
+        },
+        "concentration": {
+            "conc_gross_le_4_tdr": "Concentration Gross Le 4 Tdr",
+            "conc_gross_le_8_tdr": "Concentration Gross Le 8 Tdr",
+            "conc_net_le_4_tdr": "Concentration Net Le 4 Tdr",
+            "conc_net_le_8_tdr": "Concentration Net Le 8 Tdr",
+        },
+        "percentages": {
+            "pct_of_oi_prod_merc": "Percentage of Open Interest (Producer/Merchant)",
+            "pct_of_oi_swap": "Percentage of Open Interest (Swap Dealers)",
+            "pct_of_oi_m_money": "Percentage of Open Interest (Managed Money)",
+            "pct_of_oi_other_rept": "Percentage of Open Interest (Other Reportable)",
+            "pct_of_oi_tot_rept": "Percentage of Open Interest (Total Report)",
+            "pct_of_oi_nonrept": "Percentage of Open Interest (Non-Reportable)",
+        },
+        "traders": {
+            "traders_prod_merc": "Traders Producer/Merchant",
+            "traders_swap": "Traders Swap Dealers",
+            "traders_m_money": "Traders Managed Money",
+            "traders_other_rept": "Traders Other Reportable",
+            "traders_tot_rept": "Traders Total Report",
+        },
+    },
+    "report_tff": {
+        "positions": {
+            "dealer_positions": "Dealer",
+            "asset_mgr_positions": "Asset Manager",
+            "lev_money_positions": "Leveraged Money",
+            "other_rept_positions": "Other Reportable",
+            "tot_rept_positions": "Total Reportable",
+            "nonrept_positions": "Non-Reportable",
+        },
+        "concentration": {
+            "conc_gross_le_4_tdr": "Concentration Gross Le 4 Tdr",
+            "conc_gross_le_8_tdr": "Concentration Gross Le 8 Tdr",
+            "conc_net_le_4_tdr": "Concentration Net Le 4 Tdr",
+            "conc_net_le_8_tdr": "Concentration Net Le 8 Tdr",
+        },
+        "percentages": {
+            "pct_of_oi_dealer": "Percentage of Open Interest (Dealer)",
+            "pct_of_oi_asset_mgr": "Percentage of Open Interest (Asset Manager)",
+            "pct_of_oi_lev_money": "Percentage of Open Interest (Leveraged Money)",
+            "pct_of_oi_other_rept": "Percentage of Open Interest (Other Reportable)",
+            "pct_of_oi_tot_rept": "Percentage of Open Interest (Total Report)",
+            "pct_of_oi_nonrept": "Percentage of Open Interest (Non-Reportable)",
+        },
+        "traders": {
+            "traders_dealer": "Traders Dealer",
+            "traders_asset_mgr": "Traders Asset Manager",
+            "traders_lev_money": "Traders Leveraged Money",
+            "traders_other_rept": "Traders Other Reportable",
+            "traders_tot_rept": "Traders Total Report",
+        },
     },
 }
 

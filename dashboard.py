@@ -243,6 +243,13 @@ app.layout = dbc.Container(
                     ),
                     className="col-12",
                 ),
+                dbc.Col(
+                    dcc.Graph(
+                        id="percentage-graph",
+                        className="col-12 my-2",
+                    ),
+                    className="col-12",
+                ),
             ],
             className="p-2",
         ),
@@ -281,13 +288,12 @@ def update_position_types(report):
     if report is None:
         return [], []
     selected_report = rep_prefix(report)
-    return (
-        [
-            {"label": j, "value": i}
-            for i, j in positions_by_report[selected_report].items()
-        ],
-        [list(positions_by_report[selected_report].keys())[0]],
-    )
+    positions = positions_by_report[selected_report]["positions"]
+
+    position_options = [{"label": j, "value": i} for i, j in positions.items()]
+    default_value = list(positions.keys())[0]
+
+    return position_options, [default_value]
 
 
 @app.callback(
@@ -397,48 +403,45 @@ def rename_columns(df):
     return df
 
 
-def get_position_data(report_type, selected_market_commodity, years):
-    column_str = ", ".join(
-        list(reports_cols[rep_prefix(report_type)]["positions"].keys())
-    )
-    query = f"""
-    SELECT report_date_as_yyyy_mm_dd, {column_str}
-    FROM {report_type}
-    WHERE market_and_exchange_names = ?
-    AND report_date_as_yyyy_mm_dd BETWEEN ? AND ?
-    ORDER BY 1 ASC
-    """
-    print(query)
-    conn = sqlite3.connect("data.db")
-    params = (selected_market_commodity, f"{years[0]}-01-01", f"{years[1]}-12-31")
+def get_position_data(report_type, selected_market_commodity, years, types):
+    data_frames = []  # Lista przechowująca ramek danych dla różnych typów
 
-    df_data = pd.read_sql(query, conn, params=params)
+    conn = sqlite3.connect("data.db")
+    short_name_type = rep_prefix(report_type)
+    for data_type in types:
+        column_str = ", ".join(list(reports_cols[short_name_type][data_type].keys()))
+        query = f"""
+        SELECT report_date_as_yyyy_mm_dd, {column_str}
+        FROM {report_type}
+        WHERE market_and_exchange_names = ?
+        AND report_date_as_yyyy_mm_dd BETWEEN ? AND ?
+        ORDER BY 1 ASC
+        """
+        params = (selected_market_commodity, f"{years[0]}-01-01", f"{years[1]}-12-31")
+        df_data = pd.read_sql(query, conn, params=params)
+        df_data.rename(columns={"report_date_as_yyyy_mm_dd": "Date"}, inplace=True)
+        df_data.set_index("Date", inplace=True)
+        df_data.index = pd.to_datetime(df_data.index)
+        df_data = rename_columns(df_data)
+        pos_types = positions_by_report[short_name_type][data_type].keys()
+        for pos_type in pos_types:
+            df_data[f"{pos_type}_net_all"] = pd.to_numeric(
+                df_data[f"{pos_type}_long_all"]
+            ) - pd.to_numeric(df_data[f"{pos_type}_short_all"], errors="coerce")
+        print("done... positions data fetch from ", report_type)
+
+        data_frames.append(df_data)  # Dodaj ramkę do listy ramek
 
     conn.close()
-
-    print(df_data)
-
-    df_data.rename(columns={"report_date_as_yyyy_mm_dd": "Date"}, inplace=True)
-    df_data.set_index("Date", inplace=True)
-    df_data.index = pd.to_datetime(df_data.index)
-    df_data = rename_columns(df_data)
-
-    pos_types = positions_by_report[rep_prefix(report_type)]
-    print(pos_types)
-    for pos_type in pos_types:
-        print("position: ", pos_type)
-        df_data[f"{pos_type}_net_all"] = pd.to_numeric(
-            df_data[f"{pos_type}_long_all"]
-        ) - pd.to_numeric(df_data[f"{pos_type}_short_all"], errors="coerce")
-    print("done... postions data fetch from ", report_type)
-    print(df_data)
-    return df_data
+    print("data frames: ", data_frames)
+    return data_frames  # Zwróć listę ramek danych dla różnych typów
 
 
 @app.callback(
     Output("price-graph", "figure"),
     Output("commodity-graph", "figure"),
     Output("correlation-card", "children"),
+    Output("percentage-graph", "figure"),
     Input("report-dropdown", "value"),
     Input("market-and-exchange-names-dropdown", "value"),
     Input("position-type", "value"),
@@ -450,11 +453,15 @@ def get_position_data(report_type, selected_market_commodity, years):
 def update_graphs_callback(
     report_type, market_commodity, positions, years, options, ticker, add_price
 ):
-    df_price, df_positions = pd.DataFrame(), pd.DataFrame()
-    fig_price, fig_positions = {}, {}
+    df_price, df_positions, df_pct = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    fig_price, fig_positions, fig_pct = {}, {}, {}
     correlation_text = []
     if market_commodity:
-        df_positions = get_position_data(report_type, market_commodity, years)
+        print("market_commodity ", market_commodity)
+        df_positions, df_pct = get_position_data(
+            report_type, market_commodity, years, ["positions", "percentages"]
+        )
+        print("what: ", df_positions)
     if ticker:
         df_price = get_price_data(ticker, years)
         fig_price = create_figure(df_price, ticker, positions, options, True)
@@ -462,6 +469,7 @@ def update_graphs_callback(
             df_positions = pd.concat(
                 [df_price.resample("W").mean(), df_positions], axis=1
             )
+            print(df_positions)
             # df_positions = df_positions.interpolate()
             df_positions = df_positions.fillna(method="ffill")
             # Calculate correlations between "Close" and other columns
@@ -480,14 +488,16 @@ def update_graphs_callback(
             fig_positions = create_figure(
                 df_positions, market_commodity, positions, options, True
             )
+            fig_pct = create_figure(df_pct, market_commodity, positions, options, True)
         else:
             fig_positions = create_figure(
                 df_positions, market_commodity, positions, options, False
             )
 
-    # Generate the formatted correlation text
+            fig_pct = create_figure(df_pct, market_commodity, positions, options, False)
 
-    return fig_price, fig_positions, correlation_text
+    # Generate the formatted correlation text
+    return fig_price, fig_positions, correlation_text, fig_pct
 
 
 def get_price_data(ticker, year):
@@ -497,6 +507,8 @@ def get_price_data(ticker, year):
 
 
 def create_figure(df, name, positions, options, price_chart=True):
+    print(df, name, positions, options, price_chart)
+
     fig = {
         "data": [],
         "layout": {
@@ -509,6 +521,7 @@ def create_figure(df, name, positions, options, price_chart=True):
 
     cols_selected = [f"{pos}_{opt}_all" for pos in positions for opt in options]
     print(cols_selected)
+    print("\n==================================================\n")
     print([col for col in df.columns])
     for col in df.columns:
         if col == "Close" and price_chart:
