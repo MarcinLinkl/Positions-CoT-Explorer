@@ -1,4 +1,4 @@
-reports_tables = {
+reports_tables_names = {
     "report_legacy_futures_only": "report_legacy",
     "report_legacy_combined": "report_legacy",
     "report_disaggregated_futures_only": "report_disaggregated",
@@ -8,7 +8,7 @@ reports_tables = {
     "report_suplemental_cit": "report_suplemental_cit",
 }
 
-report_types_options = {
+report_positions_root_of_cols = {
     "report_legacy": {
         "Commercial": {
             "positions": "comm_positions",
@@ -52,7 +52,7 @@ report_types_options = {
     # ... Kolejne raporty i ich sekcje można dodać tutaj
 }
 
-positions_by_report = {
+root_cols_of_postion = {
     "report_legacy": {
         "positions": {
             "comm_positions": "Commercial",
@@ -165,7 +165,7 @@ positions_by_report = {
     },
 }
 
-reports_cols = {
+reports_full_cols = {
     "report_legacy": {
         "positions": {
             "noncomm_positions_long_all": "Non-Commercial Positions Long All",

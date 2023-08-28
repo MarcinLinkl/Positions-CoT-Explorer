@@ -5,7 +5,7 @@ import json
 import re
 
 
-def rep_prefix(value):
+def get_core_reports_name(value):
     """
     Usuwa sufiksy "_futures_only" oraz "_combined" z podanego raportu legacy.
 

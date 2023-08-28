@@ -6,7 +6,12 @@ from utils import *
 from ticker_finder import *
 import sqlite3
 import pandas as pd
-from reports_definitions import positions_by_report, reports_cols
+from reports_definitions import *
+
+# positions_by_report,
+# report_types_options,
+# reports_positions_cols,
+
 
 yahoo_tk_data = load_yahoo_tk_data()
 
@@ -287,12 +292,11 @@ def toggle_correlation_card(show_clicks, hide_clicks):
 def update_position_types(report):
     if report is None:
         return [], []
-    selected_report = rep_prefix(report)
-    positions = positions_by_report[selected_report]["positions"]
+    selected_report = get_core_reports_name(report)
+    positions = list(report_positions_root_of_cols[selected_report].keys())
 
-    position_options = [{"label": j, "value": i} for i, j in positions.items()]
-    default_value = list(positions.keys())[0]
-
+    position_options = [{"label": i, "value": i} for i in positions]
+    default_value = positions[1]
     return position_options, [default_value]
 
 
@@ -407,9 +411,9 @@ def get_position_data(report_type, selected_market_commodity, years, types):
     data_frames = []  # Lista przechowująca ramek danych dla różnych typów
 
     conn = sqlite3.connect("data.db")
-    short_name_type = rep_prefix(report_type)
+    core_report = get_core_reports_name(report_type)
     for data_type in types:
-        column_str = ", ".join(list(reports_cols[short_name_type][data_type].keys()))
+        column_str = ", ".join(list(reports_full_cols[core_report][data_type].keys()))
         query = f"""
         SELECT report_date_as_yyyy_mm_dd, {column_str}
         FROM {report_type}
@@ -423,7 +427,7 @@ def get_position_data(report_type, selected_market_commodity, years, types):
         df_data.set_index("Date", inplace=True)
         df_data.index = pd.to_datetime(df_data.index)
         df_data = rename_columns(df_data)
-        pos_types = positions_by_report[short_name_type][data_type].keys()
+        pos_types = root_cols_of_postion[core_report][data_type].keys()
         for pos_type in pos_types:
             df_data[f"{pos_type}_net_all"] = pd.to_numeric(
                 df_data[f"{pos_type}_long_all"]
@@ -453,25 +457,35 @@ def get_position_data(report_type, selected_market_commodity, years, types):
 def update_graphs_callback(
     report_type, market_commodity, positions, years, options, ticker, add_price
 ):
-    df_price, df_positions, df_pct = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-    fig_price, fig_positions, fig_pct = {}, {}, {}
+    df_price, df_positions, df_percentages = (
+        pd.DataFrame(),
+        pd.DataFrame(),
+        pd.DataFrame(),
+    )
+    fig_price, fig_positions, fig_percentages = {}, {}, {}
+    # this is univeral name, mnot t
+    report = get_core_reports_name(report_type)
     correlation_text = []
     if market_commodity:
         print("market_commodity ", market_commodity)
-        df_positions, df_pct = get_position_data(
+        df_positions, df_percentages = get_position_data(
             report_type, market_commodity, years, ["positions", "percentages"]
         )
-        print("what: ", df_positions)
+
     if ticker:
         df_price = get_price_data(ticker, years)
-        fig_price = create_figure(df_price, ticker, positions, options, True)
+        fig_price = create_figure(df_price, ticker, price_chart=True)
         if market_commodity:
-            df_positions = pd.concat(
-                [df_price.resample("W").mean(), df_positions], axis=1
+            df_price_weekly = df_price.resample("W").mean()
+            df_positions = pd.concat([df_price_weekly, df_positions], axis=1).fillna(
+                method="ffill"
             )
-            print(df_positions)
+            df_percentages = pd.concat(
+                [df_price_weekly, df_percentages], axis=1
+            ).fillna(method="ffill")
+
             # df_positions = df_positions.interpolate()
-            df_positions = df_positions.fillna(method="ffill")
+
             # Calculate correlations between "Close" and other columns
             correlations = df_positions.corr()["Close"].drop("Close")
             sorted_correlations = correlations.abs().sort_values(ascending=False)
@@ -484,20 +498,42 @@ def update_graphs_callback(
             ]
 
     if market_commodity and positions and options:
+        cols_positions, cols_percentages = [], []
+
+        for position in positions:
+            cols_positions.append(
+                report_positions_root_of_cols[report][position]["positions"]
+            )
+            cols_percentages.append(
+                report_positions_root_of_cols[report][position]["percentages"]
+            )
+
         if add_price:
             fig_positions = create_figure(
-                df_positions, market_commodity, positions, options, True
+                df_positions,
+                market_commodity,
+                cols_positions,
+                options,
+                True,
             )
-            fig_pct = create_figure(df_pct, market_commodity, positions, options, True)
+            fig_percentages = create_figure(
+                df_percentages, market_commodity, cols_percentages, options, True
+            )
         else:
             fig_positions = create_figure(
-                df_positions, market_commodity, positions, options, False
+                df_positions,
+                market_commodity,
+                cols_positions,
+                options,
+                False,
             )
 
-            fig_pct = create_figure(df_pct, market_commodity, positions, options, False)
+            fig_percentages = create_figure(
+                df_percentages, market_commodity, cols_percentages, options, False
+            )
 
     # Generate the formatted correlation text
-    return fig_price, fig_positions, correlation_text, fig_pct
+    return fig_price, fig_positions, correlation_text, fig_percentages
 
 
 def get_price_data(ticker, year):
@@ -506,31 +542,43 @@ def get_price_data(ticker, year):
     return yf.download(ticker, start_date, end_date, "1wk")["Close"].to_frame()
 
 
-def create_figure(df, name, positions, options, price_chart=True):
-    print(df, name, positions, options, price_chart)
+def create_figure(df, name, positions=False, options=False, price_chart=True):
+    if df.columns[-1].startswith("pct"):
+        name = "[%] PERCENTAGE CHART OF " + name
+        # y_desc = "[%]"
+    elif df.columns[-1] == "Close":
+        name = "[$] PRICE CHART OF " + name
+        # y_desc = "[%]"
+    else:
+        name = "[NUMBERS] POSITIONS CHART OF " + name
+        # y_desc = "[NUMBERS]"
 
     fig = {
         "data": [],
         "layout": {
-            "margin": {"l": 30, "r": 30, "t": 30, "b": 30},  # Marginesy wokół wykresu
-            "title": f"{name}",  # Tytuł wykresu
-            "yaxis": {"title": "Pozycje", "y": "-0.5"},  # Etykieta osi Y
-            "legend": {"orientation": "h", "y": 1},  # Legenda wykresu (poziomo)
+            # "margin": {"l": 30, "r": 30, "t": 30, "b": 30},  # Marginesy wokół wykresu
+            "title": {"text": name, "y": 1.4},  # Tytuł wykresu
+            # "yaxis": {"title": y_desc, "y": "-0.5"},  # Etykieta osi Y
+            "legend": {"orientation": "h", "y": 1.2},  # Legenda wykresu (poziomo)
         },
     }
 
-    cols_selected = [f"{pos}_{opt}_all" for pos in positions for opt in options]
-    print(cols_selected)
-    print("\n==================================================\n")
-    print([col for col in df.columns])
+    if positions and options:
+        cols_selected = []
+        if isinstance(positions, str):
+            positions = [positions]
+        cols_selected = [f"{pos}_{opt}_all" for pos in positions for opt in options]
+
     for col in df.columns:
         if col == "Close" and price_chart:
+            print("Close column in data..")
+            print("Adding Price Chart")
             fig["data"].append(
                 {
                     "x": df.index,
                     "y": df[col],
                     "type": "line",
-                    "name": "Price $",
+                    "name": "PRICE [$]",
                     "yaxis": "y2",  # Dodanie drugiej osi y dla ceny towaru
                     # "line": {"width": 1, "color": "firebrick", "dash": "line"},
                 }
@@ -538,11 +586,12 @@ def create_figure(df, name, positions, options, price_chart=True):
             fig["layout"]["yaxis2"] = {
                 "overlaying": "y",  # Nakładająca się na pierwszą oś y
                 "side": "right",  # Po prawej stronie
-                "title": "Price",  # Tytuł dla drugiej osi y
+                "title": "PRICE [$]",  # Tytuł dla drugiej osi y
                 "showgrid": False,  # Wyłączenie siatki dla drugiej osi y
             }
+
         elif col in cols_selected:
-            print(col, "True")
+            print(f"Adding Line for {col}")
             fig["data"].append(
                 {
                     "x": df.index,
@@ -552,6 +601,10 @@ def create_figure(df, name, positions, options, price_chart=True):
                     "line": {"width": 1},
                     "yaxis": "y1",
                 }
+            )
+        else:
+            print(
+                f"this {col} is not in found in {cols_selected}!!!!!!!!!!!!!!!!!!!!!!!!"
             )
     return fig
 
