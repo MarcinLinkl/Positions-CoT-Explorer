@@ -232,7 +232,7 @@ app.layout = dbc.Container(
                     dbc.Card(
                         [html.Div(id="correlation-card", style={"display": "none"})],
                     ),
-                    className="col-7 my-2 mx-auto text-center",
+                    className="col-12 my-2 mx-auto text-center",
                 ),
                 dbc.Col(
                     dcc.Graph(
@@ -465,7 +465,7 @@ def update_graphs_callback(
     fig_price, fig_positions, fig_percentages = {}, {}, {}
     # this is univeral name, mnot t
     report = get_core_reports_name(report_type)
-    correlation_text = []
+    card_percentage = []
     if market_commodity:
         print("market_commodity ", market_commodity)
         df_positions, df_percentages = get_position_data(
@@ -487,15 +487,46 @@ def update_graphs_callback(
             # df_positions = df_positions.interpolate()
 
             # Calculate correlations between "Close" and other columns
-            correlations = df_positions.corr()["Close"].drop("Close")
-            sorted_correlations = correlations.abs().sort_values(ascending=False)
-            correlation_text = [
+            # Calculating correlations for df_positions and df_percentage
+            correlations_positions = df_positions.corr()["Close"].drop("Close")
+            sorted_correlations_positions = correlations_positions.abs().sort_values(
+                ascending=False
+            )
+            correlation_text_positions = [
                 html.P(
-                    f"Correlation between {ticker} and '{col}' {'positive: +' if correlations[col] >= 0 else 'negative: -'}{correlation:.2f}",
+                    f"Correlation between {ticker} and '{col}' {'positive: +' if correlations_positions[col] >= 0 else 'negative: -'}{correlation:.2f}",
                     style={"margin": "5px"},
                 )
-                for col, correlation in sorted_correlations.items()
+                for col, correlation in sorted_correlations_positions.items()
             ]
+
+            correlations_percentage = df_percentages.corr()["Close"].drop("Close")
+            sorted_correlations_percentage = correlations_percentage.abs().sort_values(
+                ascending=False
+            )
+            correlation_text_percentage = [
+                html.P(
+                    f"Correlation between {ticker} and '{col}' {'positive: +' if correlations_percentage[col] >= 0 else 'negative: -'}{correlation:.2f}",
+                    style={"margin": "5px"},
+                )
+                for col, correlation in sorted_correlations_percentage.items()
+            ]
+            card_percentage = dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            html.H3("Pearson's correlations for price and positions"),
+                            *correlation_text_positions,
+                        ]
+                    ),
+                    dbc.Col(
+                        [
+                            html.H3("Pearson's correlations for price and percetanges"),
+                            *correlation_text_percentage,
+                        ]
+                    ),
+                ]
+            )
 
     if market_commodity and positions and options:
         cols_positions, cols_percentages = [], []
@@ -533,7 +564,7 @@ def update_graphs_callback(
             )
 
     # Generate the formatted correlation text
-    return fig_price, fig_positions, correlation_text, fig_percentages
+    return fig_price, fig_positions, card_percentage, fig_percentages
 
 
 def get_price_data(ticker, year):
