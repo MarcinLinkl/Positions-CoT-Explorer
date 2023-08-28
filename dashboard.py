@@ -588,9 +588,12 @@ def create_figure(df, name, positions=False, options=False, price_chart=True):
         "data": [],
         "layout": {
             # "margin": {"l": 30, "r": 30, "t": 30, "b": 30},  # Marginesy wokół wykresu
-            "title": {"text": name, "y": 1.4},  # Tytuł wykresu
+            "title": {
+                "text": name,
+            },
+            # Tytuł wykresu
             # "yaxis": {"title": y_desc, "y": "-0.5"},  # Etykieta osi Y
-            "legend": {"orientation": "h", "y": 1.2},  # Legenda wykresu (poziomo)
+            "legend": {"orientation": "h", "y": 1.1},  # Legenda wykresu (poziomo)
         },
     }
 
