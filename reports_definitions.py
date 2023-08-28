@@ -8,7 +8,7 @@ reports_tables_names = {
     "report_suplemental_cit": "report_suplemental_cit",
 }
 
-report_positions_root_of_cols = {
+report_positions_root_of_cols_types = {
     "report_legacy": {
         "Commercial": {
             "positions": "comm_positions",
@@ -49,10 +49,61 @@ report_positions_root_of_cols = {
             "percentages": "pct_oi_tot_rept_nocit",
         },
     },
-    # ... Kolejne raporty i ich sekcje można dodać tutaj
+    "report_disaggregated": {
+        "Producer/Merchant": {
+            "positions": "prod_merc_positions",
+            "percentages": "pct_of_oi_prod_merc",
+        },
+        "Swap Dealers": {
+            "positions": "swap_positions",
+            "percentages": "pct_of_oi_swap",
+        },
+        "Managed Money": {
+            "positions": "m_money_positions",
+            "percentages": "pct_of_oi_m_money",
+        },
+        "Other Reportable": {
+            "positions": "other_rept_positions",
+            "percentages": "pct_of_oi_other_rept",
+        },
+        "Total Reportable": {
+            "positions": "tot_rept_positions",
+            "percentages": "pct_of_oi_tot_rept",
+        },
+        "Non-Reportable": {
+            "positions": "nonrept_positions",
+            "percentages": "pct_of_oi_nonrept",
+        },
+    },
+    "report_tff": {
+        "Dealer": {
+            "positions": "dealer_positions",
+            "percentages": "pct_of_oi_dealer",
+        },
+        "Asset Manager": {
+            "positions": "asset_mgr_positions",
+            "percentages": "pct_of_oi_asset_mgr",
+        },
+        "Leveraged Money": {
+            "positions": "lev_money_positions",
+            "percentages": "pct_of_oi_lev_money",
+        },
+        "Other Reportable": {
+            "positions": "other_rept_positions",
+            "percentages": "pct_of_oi_other_rept",
+        },
+        "Total Reportable": {
+            "positions": "tot_rept_positions",
+            "percentages": "pct_of_oi_tot_rept",
+        },
+        "Non-Reportable": {
+            "positions": "nonrept_positions",
+            "percentages": "pct_of_oi_nonrept",
+        },
+    },
 }
 
-root_cols_of_postion = {
+root_of_cols_in_postions = {
     "report_legacy": {
         "positions": {
             "comm_positions": "Commercial",

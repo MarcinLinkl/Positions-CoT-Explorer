@@ -293,8 +293,8 @@ def update_position_types(report):
     if report is None:
         return [], []
     selected_report = get_core_reports_name(report)
-    positions = list(report_positions_root_of_cols[selected_report].keys())
-
+    positions = list(root_of_cols_in_postions[selected_report]["positions"].values())
+    print(positions)
     position_options = [{"label": i, "value": i} for i in positions]
     default_value = positions[1]
     return position_options, [default_value]
@@ -427,7 +427,7 @@ def get_position_data(report_type, selected_market_commodity, years, types):
         df_data.set_index("Date", inplace=True)
         df_data.index = pd.to_datetime(df_data.index)
         df_data = rename_columns(df_data)
-        pos_types = root_cols_of_postion[core_report][data_type].keys()
+        pos_types = root_of_cols_in_postions[core_report][data_type].keys()
         for pos_type in pos_types:
             df_data[f"{pos_type}_net_all"] = pd.to_numeric(
                 df_data[f"{pos_type}_long_all"]
@@ -533,10 +533,10 @@ def update_graphs_callback(
 
         for position in positions:
             cols_positions.append(
-                report_positions_root_of_cols[report][position]["positions"]
+                report_positions_root_of_cols_types[report][position]["positions"]
             )
             cols_percentages.append(
-                report_positions_root_of_cols[report][position]["percentages"]
+                report_positions_root_of_cols_types[report][position]["percentages"]
             )
 
         if add_price:
@@ -635,10 +635,6 @@ def create_figure(df, name, positions=False, options=False, price_chart=True):
                     "line": {"width": 1},
                     "yaxis": "y1",
                 }
-            )
-        else:
-            print(
-                f"this {col} is not in found in {cols_selected}!!!!!!!!!!!!!!!!!!!!!!!!"
             )
     return fig
 
