@@ -3,25 +3,17 @@ import sqlite3
 from datetime import date
 import json
 import re
+from bidict import bidict
 
 
 def get_core_reports_name(value):
-    """
-    Usuwa sufiksy "_futures_only" oraz "_combined" z podanego raportu legacy.
-
-    Parametry:
-    value (str): Łańcuch znaków reprezentujący raport legacy.
-
-    Zwraca:
-    str: Raport legacy po usunięciu sufiksów "_futures_only" oraz "_combined".
-    """
     return re.sub(r"(_futures_only|_combined)$", "", value)
 
 
 def load_yahoo_tk_data():
     with open("yahoo_tk_futures.json") as f:
         yahoo_tk_data = json.load(f)
-    return yahoo_tk_data
+    return bidict(yahoo_tk_data)
 
 
 def get_reports_opts():

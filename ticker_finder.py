@@ -1,8 +1,4 @@
-import pandas as pd
-import sqlite3
-import yfinance as yf
 import difflib
-import json
 
 
 def similarity_score(s1, s2):
@@ -13,7 +9,7 @@ def similarity_score(s1, s2):
     return matcher.ratio()
 
 
-def find_similar_ticker(commodity_selected, data):
+def find_similar_ticker(commodity_selected, data_tickers):
     print("Sprawdzam dopasowanie...")
     print("Wybrano: ", commodity_selected)
     commodity_selected = (
@@ -28,14 +24,14 @@ def find_similar_ticker(commodity_selected, data):
     best_match = None
     best_score = 0.0
 
-    for key in data.keys():
-        score = similarity_score(commodity_selected, key)
+    for value in data_tickers.values():
+        score = similarity_score(commodity_selected, value)
         if score > best_score:
-            best_match = key
+            best_match = value
             best_score = score
 
     if best_match is not None and best_score >= 0.6:
-        return data[best_match]
+        return data_tickers.inverse[best_match]
     else:
         # Spróbuj odwrócić kolejność wyrazów w zapytaniu użytkownika i ponownie porównać
         reversed_commodity_selected = " ".join(reversed(commodity_selected.split()))
@@ -46,7 +42,7 @@ def find_similar_ticker(commodity_selected, data):
         )
 
         if reversed_score >= 0.6:
-            return data[best_match]
+            return data_tickers.inverse[best_match]
         else:
             print("Brak dopasowania.")
             return None

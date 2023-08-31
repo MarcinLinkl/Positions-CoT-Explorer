@@ -6,17 +6,18 @@ from utils import *
 from ticker_finder import *
 import sqlite3
 import pandas as pd
-from reports_definitions import *
+import yfinance as yf
+from reports_definitions import (
+    full_cols_with_net,
+    positions_percentages_root_of_cols,
+    full_cols,
+    root_of_cols,
+)
 
-# positions_by_report,
-# report_types_options,
-# reports_positions_cols,
-
-
-yahoo_tk_data = load_yahoo_tk_data()
+yahoo_tickers = load_yahoo_tk_data()
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SUPERHERO])
-
+app.title = "Positions Explorer"
 app.layout = dbc.Container(
     [
         dbc.Row(
@@ -92,8 +93,8 @@ app.layout = dbc.Container(
                         dcc.Dropdown(
                             id="chart-price-dropdown",
                             options=[
-                                {"label": f"Price of {i.lower()}", "value": j}
-                                for i, j in yahoo_tk_data.items()
+                                {"label": f"Price of {j.lower()}", "value": i}
+                                for i, j in yahoo_tickers.items()
                             ],
                             placeholder="Select price",
                             optionHeight=50,
@@ -293,8 +294,7 @@ def update_position_types(report):
     if report is None:
         return [], []
     selected_report = get_core_reports_name(report)
-    positions = list(root_of_cols_in_postions[selected_report]["positions"].values())
-    print(positions)
+    positions = list(root_of_cols[selected_report]["positions"].values())
     position_options = [{"label": i, "value": i} for i in positions]
     default_value = positions[1]
     return position_options, [default_value]
@@ -330,24 +330,10 @@ def update_market_dropdown(selected_commodity, selected_report):
     Input("market-and-exchange-names-dropdown", "value"),
 )
 def update_year_slider_and_price_dropdown_value(selected):
-    """
-    Update the year slider and price dropdown value based on the selected market and exchange names.
-
-    Parameters:
-    selected (any): The selected market and exchange names.
-
-    Returns:
-    price_chart_label (str): The label for the price chart.
-    ticker_dropdown (any): The value of the ticker dropdown.
-    min_y (int): The minimum value of the year slider.
-    max_y (int): The maximum value of the year slider.
-    values (list): The values of the year slider.
-    marks (dict): The marks for the year slider.
-    """
     if selected is None:
         return "Select a price chart:", None, 0, 0, [0, 0], {}
 
-    ticker_dropdown = find_similar_ticker(selected, yahoo_tk_data)
+    ticker_dropdown = find_similar_ticker(selected, yahoo_tickers)
     price_chart_label = (
         "Price chart not found; may need to select one manually:"
         if ticker_dropdown is None
@@ -365,15 +351,6 @@ def update_year_slider_and_price_dropdown_value(selected):
     Input("display-chart", "value"),
 )
 def toggle_price_graph_visibility(chart_together_value):
-    """
-    Toggles the visibility of the price graph based on the value of the "display-chart" input.
-
-    Parameters:
-        chart_together_value (list): A list containing a single boolean value indicating whether the price graph should be displayed together with the chart.
-
-    Returns:
-        dict: A dictionary representing the style of the "price-graph" output. If the value of "chart_toge  ther_value" is not [True], the style will be {"display": "none"}. Otherwise, an empty dictionary will be returned.
-    """
     return {"display": "none"} if chart_together_value != [True] else {}
 
 
@@ -409,11 +386,10 @@ def rename_columns(df):
 
 def get_position_data(report_type, selected_market_commodity, years, types):
     data_frames = []  # Lista przechowująca ramek danych dla różnych typów
-
     conn = sqlite3.connect("data.db")
     core_report = get_core_reports_name(report_type)
     for data_type in types:
-        column_str = ", ".join(list(reports_full_cols[core_report][data_type].keys()))
+        column_str = ", ".join(list(full_cols[core_report][data_type].keys()))
         query = f"""
         SELECT report_date_as_yyyy_mm_dd, {column_str}
         FROM {report_type}
@@ -427,7 +403,7 @@ def get_position_data(report_type, selected_market_commodity, years, types):
         df_data.set_index("Date", inplace=True)
         df_data.index = pd.to_datetime(df_data.index)
         df_data = rename_columns(df_data)
-        pos_types = root_of_cols_in_postions[core_report][data_type].keys()
+        pos_types = root_of_cols[core_report][data_type].keys()
         for pos_type in pos_types:
             df_data[f"{pos_type}_net_all"] = pd.to_numeric(
                 df_data[f"{pos_type}_long_all"]
@@ -473,8 +449,11 @@ def update_graphs_callback(
         )
 
     if ticker:
+        price_name = yahoo_tickers[ticker].upper()
         df_price = get_price_data(ticker, years)
-        fig_price = create_figure(df_price, ticker, price_chart=True)
+        fig_price = create_figure(
+            df_price, ticker, price_chart=True, price_name=price_name
+        )
         if market_commodity:
             df_price_weekly = df_price.resample("W").mean()
             df_positions = pd.concat([df_price_weekly, df_positions], axis=1).fillna(
@@ -494,7 +473,7 @@ def update_graphs_callback(
             )
             correlation_text_positions = [
                 html.P(
-                    f"Correlation between {ticker} and '{col}' {'positive: +' if correlations_positions[col] >= 0 else 'negative: -'}{correlation:.2f}",
+                    f"{full_cols_with_net[report]['positions'][col]} {'positive: +' if correlations_positions[col] >= 0 else 'negative: -'}{correlation:.2f}",
                     style={"margin": "5px"},
                 )
                 for col, correlation in sorted_correlations_positions.items()
@@ -506,7 +485,7 @@ def update_graphs_callback(
             )
             correlation_text_percentage = [
                 html.P(
-                    f"Correlation between {ticker} and '{col}' {'positive: +' if correlations_percentage[col] >= 0 else 'negative: -'}{correlation:.2f}",
+                    f"{full_cols_with_net[report]['percentages'][col]} {'positive: +' if correlations_percentage[col] >= 0 else 'negative: -'}{correlation:.2f}",
                     style={"margin": "5px"},
                 )
                 for col, correlation in sorted_correlations_percentage.items()
@@ -515,13 +494,15 @@ def update_graphs_callback(
                 [
                     dbc.Col(
                         [
-                            html.H3("Pearson's correlations for price and positions"),
+                            html.H3(f"Position correlations of {price_name.lower()}:"),
                             *correlation_text_positions,
                         ]
                     ),
                     dbc.Col(
                         [
-                            html.H3("Pearson's correlations for price and percetanges"),
+                            html.H3(
+                                f"Percentage correlations of {price_name.lower()}:"
+                            ),
                             *correlation_text_percentage,
                         ]
                     ),
@@ -533,10 +514,10 @@ def update_graphs_callback(
 
         for position in positions:
             cols_positions.append(
-                report_positions_root_of_cols_types[report][position]["positions"]
+                positions_percentages_root_of_cols[report][position]["positions"]
             )
             cols_percentages.append(
-                report_positions_root_of_cols_types[report][position]["percentages"]
+                positions_percentages_root_of_cols[report][position]["percentages"]
             )
 
         if add_price:
@@ -546,9 +527,15 @@ def update_graphs_callback(
                 cols_positions,
                 options,
                 True,
+                price_name,
             )
             fig_percentages = create_figure(
-                df_percentages, market_commodity, cols_percentages, options, True
+                df_percentages,
+                market_commodity,
+                cols_percentages,
+                options,
+                True,
+                price_name,
             )
         else:
             fig_positions = create_figure(
@@ -573,16 +560,15 @@ def get_price_data(ticker, year):
     return yf.download(ticker, start_date, end_date, "1wk")["Close"].to_frame()
 
 
-def create_figure(df, name, positions=False, options=False, price_chart=True):
+def create_figure(
+    df, name, positions=False, options=False, price_chart=True, price_name=""
+):
     if df.columns[-1].startswith("pct"):
         name = "[%] PERCENTAGE CHART OF " + name
-        # y_desc = "[%]"
     elif df.columns[-1] == "Close":
-        name = "[$] PRICE CHART OF " + name
-        # y_desc = "[%]"
+        name = "[$] PRICE CHART OF " + price_name
     else:
-        name = "[NUMBERS] POSITIONS CHART OF " + name
-        # y_desc = "[NUMBERS]"
+        name = "POSITIONS CHART OF " + name
 
     fig = {
         "data": [],
@@ -593,7 +579,7 @@ def create_figure(df, name, positions=False, options=False, price_chart=True):
             },
             # Tytuł wykresu
             # "yaxis": {"title": y_desc, "y": "-0.5"},  # Etykieta osi Y
-            "legend": {"orientation": "h", "y": 1.1},  # Legenda wykresu (poziomo)
+            "legend": {"orientation": "h", "y": 1.15},  # Legenda wykresu (poziomo)
         },
     }
 
@@ -612,7 +598,7 @@ def create_figure(df, name, positions=False, options=False, price_chart=True):
                     "x": df.index,
                     "y": df[col],
                     "type": "line",
-                    "name": "PRICE [$]",
+                    "name": f"PRICE of {price_name} [$]",
                     "yaxis": "y2",  # Dodanie drugiej osi y dla ceny towaru
                     # "line": {"width": 1, "color": "firebrick", "dash": "line"},
                 }
@@ -640,4 +626,4 @@ def create_figure(df, name, positions=False, options=False, price_chart=True):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=2077)
+    app.run(debug=False, port=2077)
