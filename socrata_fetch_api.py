@@ -86,60 +86,61 @@ def fetch_all_reports():
 # fetch_single_report("Legacy - Futures Only")
 
 
-def create_tickers_table():
-    with sqlite3.connect("data.db") as db_connection:
-        db_cursor = db_connection.cursor()
-        db_cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS tickers_yahoo (
-                id INTEGER PRIMARY KEY,
-                commodity TEXT,
-                market_and_exchange_names TEXT,
-                yahoo_name TEXT,
-                yahoo_ticker TEXT
-                
-            )
-        """
-        )
+# def create_tickers_table():
+#     with sqlite3.connect("data.db") as db_connection:
+#         db_cursor = db_connection.cursor()
+#         db_cursor.execute(
+#             """
+#             CREATE TABLE IF NOT EXISTS tickers_yahoo (
+#                 id INTEGER PRIMARY KEY,
+#                 commodity TEXT,
+#                 market_and_exchange_names TEXT,
+#                 yahoo_name TEXT,
+#                 yahoo_ticker TEXT
+
+#             )
+#         """
+#         )
 
 
-def populate_tickers_table_from_report_table(report_table_name):
-    print("Populating tickers_yahoo table from report table...")
-    with sqlite3.connect("data.db") as db_connection:
-        db_cursor = db_connection.cursor()
-        # Check if the tickers_yahoo table is empty
-        db_cursor.execute("SELECT COUNT(*) FROM tickers_yahoo")
-        count = db_cursor.fetchone()[0]
-        if count == 0:
-            # Fetch all unique market_and_exchange_names from all report tables
+# def populate_tickers_table_from_report_table(report_table_name):
+#     print("Populating tickers_yahoo table from report table...")
+#     with sqlite3.connect("data.db") as db_connection:
+#         db_cursor = db_connection.cursor()
+#         # Check if the tickers_yahoo table is empty
+#         db_cursor.execute("SELECT COUNT(*) FROM tickers_yahoo")
+#         count = db_cursor.fetchone()[0]
+#         if count == 0:
+#             # Fetch all unique market_and_exchange_names from all report tables
 
-            print(
-                "Fetching all unique market_and_exchange_names from all report tables..."
-            )
-            query = f"""
-                SELECT DISTINCT commodity,market_and_exchange_names
-                FROM {report_table_name}
-                WHERE yyyy_report_week_ww like '%{datetime.now().year}%'
-            """
-            print(query)
-            db_cursor.execute(query)
+#             print(
+#                 "Fetching all unique market_and_exchange_names from all report tables..."
+#             )
+#             query = f"""
+#                 SELECT DISTINCT commodity,market_and_exchange_names
+#                 FROM {report_table_name}
+#                 WHERE yyyy_report_week_ww like '%{datetime.now().year}%'
+#             """
+#             print(query)
+#             db_cursor.execute(query)
 
-            unique_market_names = db_cursor.fetchall()
-            print(len(unique_market_names))
+#             unique_market_names = db_cursor.fetchall()
+#             print(len(unique_market_names))
 
-            # Populate tickers_yahoo table with missing market data
-            for i in unique_market_names:
-                print("inserting: ", i[1])
+#             # Populate tickers_yahoo table with missing market data
+#             for i in unique_market_names:
+#                 print("inserting: ", i[1])
 
-                db_cursor.execute(
-                    """
-                    INSERT INTO tickers_yahoo (commodity,market_and_exchange_names, yahoo_name, yahoo_ticker)
-                    VALUES (?, ?, ?, ?)
-                """,
-                    (i[0], i[1], None, None),
-                )
+#                 db_cursor.execute(
+#                     """
+#                     INSERT INTO tickers_yahoo (commodity,market_and_exchange_names, yahoo_name, yahoo_ticker)
+#                     VALUES (?, ?, ?, ?)
+#                 """,
+#                     (i[0], i[1], None, None),
+#                 )
 
 
 # create_tickers_table()
 # populate_tickers_table_from_report_table("report_legacy_futures_only")
+
 fetch_all_reports()
