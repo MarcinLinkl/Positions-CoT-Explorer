@@ -7,12 +7,8 @@ from ticker_finder import *
 import sqlite3
 import pandas as pd
 import yfinance as yf
-from reports_definitions import (
-    full_cols_with_net,
-    positions_percentages_root_of_cols,
-    full_cols,
-    root_of_cols,
-)
+
+from reports_cols import root_cols_desc, root_cols
 
 yahoo_tickers = load_yahoo_tk_data()
 
@@ -41,10 +37,10 @@ app.layout = dbc.Container(
                 ),
                 dbc.Col(
                     [
-                        dbc.Label("Select a commodity:"),
+                        dbc.Label("Select a commodity subgroup:"),
                         dcc.Dropdown(
                             id="commodities-dropdown",
-                            placeholder="Select a commodity",
+                            placeholder="Select a commodity group",
                             optionHeight=50,
                             className="dash-dropdown",
                             style={"borderRadius": "15px"},
@@ -293,11 +289,13 @@ def toggle_correlation_card(show_clicks, hide_clicks):
 def update_position_types(report):
     if report is None:
         return [], []
-    selected_report = get_core_reports_name(report)
-    positions = list(root_of_cols[selected_report]["positions"].values())
-    position_options = [{"label": i, "value": i} for i in positions]
-    default_value = positions[1]
-    return position_options, [default_value]
+
+    selected_report = report.split("_")[1]
+    categories = root_cols_desc.get(selected_report, {})
+    options = [{"label": label, "value": value} for value, label in categories.items()]
+    default_value = options[1]["value"] if options else None
+
+    return options, [default_value]
 
 
 @app.callback(
@@ -354,67 +352,60 @@ def toggle_price_graph_visibility(chart_together_value):
     return {"display": "none"} if chart_together_value != [True] else {}
 
 
-def rename_columns(df):
-    print("rename columns")
-    for column in df.columns:
-        if column.endswith("short"):
-            new_column = column.replace("short", "short_all")
-            df.rename(columns={column: new_column}, inplace=True)
-        elif column.endswith("long"):
-            new_column = column.replace("long", "long_all")
-            df.rename(columns={column: new_column}, inplace=True)
-        elif column == "swap__positions_short_all":
-            df.rename(columns={column: column.replace("__", "_")}, inplace=True)
-        elif column.endswith("Long_All_NoCIT"):
-            df.rename(
-                columns={column: column.replace("Long_All_NoCIT", "NoCit_long_all")},
-                inplace=True,
-            )
-        elif column.endswith("Short_All_NoCIT"):
-            df.rename(
-                columns={column: column.replace("Short_All_NoCIT", "NoCit_short_all")},
-                inplace=True,
-            )
-        elif column.endswith("long_all_nocit"):
-            df.rename(
-                columns={column: column.replace("long_all_nocit", "NoCit_long_all")},
-                inplace=True,
-            )
-
-    return df
-
-
-def get_position_data(report_type, selected_market_commodity, years, types):
-    data_frames = []  # Lista przechowująca ramek danych dla różnych typów
+def get_data(report_type, selected_market_commodity, years):
     conn = sqlite3.connect("data.db")
-    core_report = get_core_reports_name(report_type)
-    for data_type in types:
-        column_str = ", ".join(list(full_cols[core_report][data_type].keys()))
-        query = f"""
-        SELECT report_date_as_yyyy_mm_dd, {column_str}
-        FROM {report_type}
-        WHERE market_and_exchange_names = ?
-        AND report_date_as_yyyy_mm_dd BETWEEN ? AND ?
-        ORDER BY 1 ASC
-        """
-        params = (selected_market_commodity, f"{years[0]}-01-01", f"{years[1]}-12-31")
-        df_data = pd.read_sql(query, conn, params=params)
-        df_data.rename(columns={"report_date_as_yyyy_mm_dd": "Date"}, inplace=True)
-        df_data.set_index("Date", inplace=True)
-        df_data.index = pd.to_datetime(df_data.index)
-        df_data = rename_columns(df_data)
-        pos_types = root_of_cols[core_report][data_type].keys()
-        for pos_type in pos_types:
-            df_data[f"{pos_type}_net_all"] = pd.to_numeric(
-                df_data[f"{pos_type}_long_all"]
-            ) - pd.to_numeric(df_data[f"{pos_type}_short_all"], errors="coerce")
-        print("done... positions data fetch from ", report_type)
+    report = report_type.split("_")[1]
+    roots = root_cols[report]
+    cols = (
+        [f"{item}_net" for item in roots]
+        + [f"{item}_long" for item in roots]
+        + [f"{item}_short" for item in roots]
+    )
 
-        data_frames.append(df_data)  # Dodaj ramkę do listy ramek
+    column_str = ", ".join(list(cols))
+    query = f"""
+    SELECT report_date_as_yyyy_mm_dd, {column_str}
+    FROM {report_type}
+    WHERE market_and_exchange_names = ?
+    AND report_date_as_yyyy_mm_dd BETWEEN ? AND ?
+    ORDER BY 1 ASC
+    """
 
+    params = (selected_market_commodity, f"{years[0]}-01-01", f"{years[1]}-12-31")
+    df_data = pd.read_sql(query, conn, params=params)
+    df_data.rename(columns={"report_date_as_yyyy_mm_dd": "Date"}, inplace=True)
+    df_data.set_index("Date", inplace=True)
+    df_data.index = pd.to_datetime(df_data.index)
     conn.close()
-    print("data frames: ", data_frames)
-    return data_frames  # Zwróć listę ramek danych dla różnych typów
+    print("data frames: ", df_data)
+    return df_data  # Zwróć listę ramek danych dla różnych typów
+
+
+def map_column_name(report, column_name):
+    category = root_cols_desc[report]
+    name = ""
+    print("column name: ", column_name)
+    if column_name.startswith("pct_of_oi"):
+        name += "Percentage of "
+        column_name = column_name.replace("pct_of_oi_", "")
+    else:
+        name += "Positions of "
+        column_name = column_name.replace("_positions", "")
+    if column_name.endswith("_net"):
+        sufix = " Net"
+        column_name = column_name.replace("_net", "")
+    elif column_name.endswith("_short"):
+        sufix = " Short"
+        column_name = column_name.replace("_short", "")
+    elif column_name.endswith("_long"):
+        print("Detected suffix: _long")
+        sufix = " Long"
+        column_name = column_name.replace("_long", "")
+    print(column_name)
+    # Zaktualizowano poniższą linię, aby pobierać odpowiedni opis z kategorii
+    name += category[column_name] + sufix
+
+    return name
 
 
 @app.callback(
@@ -440,14 +431,14 @@ def update_graphs_callback(
     )
     fig_price, fig_positions, fig_percentages = {}, {}, {}
     # this is univeral name, mnot t
-    report = get_core_reports_name(report_type)
+    report = report_type.split("_")[1]
     card_percentage = []
     if market_commodity:
         print("market_commodity ", market_commodity)
-        df_positions, df_percentages = get_position_data(
-            report_type, market_commodity, years, ["positions", "percentages"]
-        )
+        df_data = get_data(report_type, market_commodity, years)
 
+        df_percentages = df_data.filter(regex=r"^pct_of_oi")
+        df_positions = df_data.drop(columns=df_percentages.columns)
     if ticker:
         price_name = yahoo_tickers[ticker].upper()
         df_price = get_price_data(ticker, years)
@@ -463,17 +454,15 @@ def update_graphs_callback(
                 [df_price_weekly, df_percentages], axis=1
             ).fillna(method="ffill")
 
-            # df_positions = df_positions.interpolate()
+            # df_positions = df_positions.interpolate() instead of ffill
 
-            # Calculate correlations between "Close" and other columns
-            # Calculating correlations for df_positions and df_percentage
             correlations_positions = df_positions.corr()["Close"].drop("Close")
             sorted_correlations_positions = correlations_positions.abs().sort_values(
                 ascending=False
             )
             correlation_text_positions = [
                 html.P(
-                    f"{full_cols_with_net[report]['positions'][col]} {'positive: +' if correlations_positions[col] >= 0 else 'negative: -'}{correlation:.2f}",
+                    f"{map_column_name(report,col)} {'positive: +' if correlations_positions[col] >= 0 else 'negative: -'}{correlation:.2f}",
                     style={"margin": "5px"},
                 )
                 for col, correlation in sorted_correlations_positions.items()
@@ -485,7 +474,7 @@ def update_graphs_callback(
             )
             correlation_text_percentage = [
                 html.P(
-                    f"{full_cols_with_net[report]['percentages'][col]} {'positive: +' if correlations_percentage[col] >= 0 else 'negative: -'}{correlation:.2f}",
+                    f"{map_column_name(report,col)} {'positive: +' if correlations_percentage[col] >= 0 else 'negative: -'}{correlation:.2f}",
                     style={"margin": "5px"},
                 )
                 for col, correlation in sorted_correlations_percentage.items()
@@ -494,15 +483,13 @@ def update_graphs_callback(
                 [
                     dbc.Col(
                         [
-                            html.H3(f"Position correlations of {price_name.lower()}:"),
+                            html.H3(f"Correlations of {price_name.lower()}:"),
                             *correlation_text_positions,
                         ]
                     ),
                     dbc.Col(
                         [
-                            html.H3(
-                                f"Percentage correlations of {price_name.lower()}:"
-                            ),
+                            html.H3(f"Correlations of {price_name.lower()}:"),
                             *correlation_text_percentage,
                         ]
                     ),
@@ -510,30 +497,27 @@ def update_graphs_callback(
             )
 
     if market_commodity and positions and options:
-        cols_positions, cols_percentages = [], []
+        percentage_cols, positions_cols = [], []
 
-        for position in positions:
-            cols_positions.append(
-                positions_percentages_root_of_cols[report][position]["positions"]
-            )
-            cols_percentages.append(
-                positions_percentages_root_of_cols[report][position]["percentages"]
-            )
+        percentage_cols = [
+            "pct_of_oi_" + x + "_" + y for x in positions for y in options
+        ]
+        print(percentage_cols)
 
+        positions_cols = [x + "_positions_" + y for x in positions for y in options]
+        print(positions_cols)
         if add_price:
             fig_positions = create_figure(
                 df_positions,
                 market_commodity,
-                cols_positions,
-                options,
+                positions_cols,
                 True,
                 price_name,
             )
             fig_percentages = create_figure(
                 df_percentages,
                 market_commodity,
-                cols_percentages,
-                options,
+                percentage_cols,
                 True,
                 price_name,
             )
@@ -541,13 +525,12 @@ def update_graphs_callback(
             fig_positions = create_figure(
                 df_positions,
                 market_commodity,
-                cols_positions,
-                options,
+                positions_cols,
                 False,
             )
 
             fig_percentages = create_figure(
-                df_percentages, market_commodity, cols_percentages, options, False
+                df_percentages, market_commodity, percentage_cols, False
             )
 
     # Generate the formatted correlation text
@@ -557,12 +540,12 @@ def update_graphs_callback(
 def get_price_data(ticker, year):
     start_date = f"{year[0]}-01-01" if year != [0, 0] else None
     end_date = f"{year[1]}-12-31" if year != [0, 0] else None
+    print(start_date)
+    print(end_date)
     return yf.download(ticker, start_date, end_date, "1wk")["Close"].to_frame()
 
 
-def create_figure(
-    df, name, positions=False, options=False, price_chart=True, price_name=""
-):
+def create_figure(df, name, columns_selected=False, price_chart=True, price_name=""):
     if df.columns[-1].startswith("pct"):
         name = "[%] PERCENTAGE CHART OF " + name
     elif df.columns[-1] == "Close":
@@ -582,12 +565,6 @@ def create_figure(
             "legend": {"orientation": "h", "y": 1.15},  # Legenda wykresu (poziomo)
         },
     }
-
-    if positions and options:
-        cols_selected = []
-        if isinstance(positions, str):
-            positions = [positions]
-        cols_selected = [f"{pos}_{opt}_all" for pos in positions for opt in options]
 
     for col in df.columns:
         if col == "Close" and price_chart:
@@ -610,7 +587,7 @@ def create_figure(
                 "showgrid": False,  # Wyłączenie siatki dla drugiej osi y
             }
 
-        elif col in cols_selected:
+        elif col in columns_selected:
             print(f"Adding Line for {col}")
             fig["data"].append(
                 {
@@ -626,4 +603,4 @@ def create_figure(
 
 
 if __name__ == "__main__":
-    app.run(debug=False, port=2077)
+    app.run(debug=False, port=2020)

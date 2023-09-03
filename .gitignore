@@ -159,10 +159,11 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# db
+# data
 data.db
 
-#my crash
+# my temp scripts
 check.py
-old-*.py
+what.py
+test.py
 _*

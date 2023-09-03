@@ -106,8 +106,8 @@ The application is powered by a combination of libraries, tools, and frameworks:
 - Custom Python scripts, like `utils.py` and `ticker_finder.py`, enhance functionality.
 - ![SQLite Database](https://img.shields.io/badge/-SQLite-003B57?style=flat&logo=SQLite&logoColor=white&labelColor=003B57): Local database (`data.db`) for storing application data.
 - ![Socrata API](https://img.shields.io/badge/-Socrata%20API-3498DB?style=flat&logo=Socrata&logoColor=white&labelColor=3498DB): Fetch relevant data.
-- `reports_definitions.py`: Custom report definitions for structuring and managing data.
-- `socrata_fetch_api`: [Socrata API](https://dev.socrata.com/) for data retrieval.
+- `reports_cols.py`: Custom report definitions for structuring and managing data.
+- `fetch_data.py`: [Socrata API](https://dev.socrata.com/) for data retrieval.
 - `ticker_finder.py`: Script to find and manage tickers.
 - `yahoo_tk_futures.json`: JSON file with Yahoo Finance futures ticker information.
 

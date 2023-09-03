@@ -1,13 +1,7 @@
 import pandas as pd
 import sqlite3
-from datetime import date
 import json
-import re
 from bidict import bidict
-
-
-def get_core_reports_name(value):
-    return re.sub(r"(_futures_only|_combined)$", "", value)
 
 
 def load_yahoo_tk_data():
@@ -31,9 +25,16 @@ def get_reports_opts():
 
 def get_commodities_opts(table):
     conn = sqlite3.connect("data.db")
-    query_unique_commodities = f'SELECT DISTINCT commodity_name FROM {table} where yyyy_report_week_ww like "%{date.today().year}%" ORDER BY 1 ASC'
-    unique_commodities = pd.read_sql(query_unique_commodities, conn)["commodity_name"]
+    query_unique_commodities = (
+        f"SELECT DISTINCT commodity_subgroup_name FROM {table} ORDER BY 1 ASC"
+    )
+    print(query_unique_commodities)
+    unique_commodities = pd.read_sql(query_unique_commodities, conn)[
+        "commodity_subgroup_name"
+    ]
+
     conn.close()
+    print(unique_commodities)
     dropdown_options = [
         {"label": commodity, "value": commodity} for commodity in unique_commodities
     ]
@@ -44,12 +45,12 @@ def get_commodities_opts(table):
 def get_market_opts(selected_commodity, report_table):
     # Pobranie unikalnych towarów z bazy danych do listy wyboru
     conn = sqlite3.connect("data.db")
-    query_unique_commodities = f'SELECT DISTINCT market_and_exchange_names FROM {report_table} where yyyy_report_week_ww like "%{date.today().year}%" AND commodity_name="{selected_commodity}" ORDER BY 1 ASC'
+    query_unique_commodities = f'SELECT DISTINCT market_and_exchange_names FROM {report_table} where commodity_subgroup_name="{selected_commodity}" ORDER BY 1 ASC'
     unique_commodities = pd.read_sql(query_unique_commodities, conn)[
         "market_and_exchange_names"
     ]
     conn.close()
-
+    print(unique_commodities)
     dropdown_options = [
         {"label": commodity, "value": commodity} for commodity in unique_commodities
     ]
