@@ -74,6 +74,10 @@ def get_slider_range_dates(comodity):
 def get_slider_opts(selected_commodity):
     min_date, max_date = get_slider_range_dates(selected_commodity)
     # Tworzymy znaczniki (marks) dla slidera
-    marks = {year: str(year) for year in range(min_date, max_date + 1, 2)}
+    if (max_date - min_date) < 6:
+        marks_step = 1
+    else:
+        marks_step = 2
+    marks = {year: str(year) for year in range(min_date, max_date + 1, marks_step)}
     # Zwracamy nowy zakres slidera oraz znaczniki
     return min_date, max_date, [min_date, max_date], marks
