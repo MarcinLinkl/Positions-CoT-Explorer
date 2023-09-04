@@ -261,45 +261,6 @@ app.layout = dbc.Container(
 )
 
 
-# Callback to toggle the correlation card's visibility
-@app.callback(
-    Output("correlation-card", "style"),
-    Input("show-corr", "n_clicks"),
-    Input("hide-corr", "n_clicks"),
-)
-def toggle_correlation_card(show_clicks, hide_clicks):
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        return {"display": "none"}  # Domyślnie ukryj kartę
-
-    button_id = ctx.triggered[0]["prop_id"].split(".")[0]
-
-    if button_id == "show-corr" and show_clicks:
-        return {"display": "block"}  # Pokaż kartę po kliknięciu "Show Correlation Card"
-    elif button_id == "hide-corr" and hide_clicks:
-        return {"display": "none"}  # Ukryj kartę po kliknięciu "Hide Correlation Card"
-    else:
-        return dash.no_update  # Nie zmieniaj stanu karty
-
-
-# Callback to update position types based on the selected report
-@app.callback(
-    Output("position-type", "options"),
-    Output("position-type", "value"),
-    Input("report-dropdown", "value"),
-)
-def update_position_types(report):
-    if report is None:
-        return [], []
-
-    selected_report = report.split("_")[1]
-    categories = root_cols_desc.get(selected_report, {})
-    options = [{"label": label, "value": value} for value, label in categories.items()]
-    default_value = options[1]["value"] if options else None
-
-    return options, [default_value]
-
-
 # Callback to update commodities dropdown options based on the selected report
 @app.callback(
     Output("commodities-dropdown", "options"), Input("report-dropdown", "value")
@@ -347,6 +308,24 @@ def update_year_slider_and_price_dropdown_value(selected):
     return price_chart_label, ticker_dropdown, min_y, max_y, values, marks
 
 
+# Callback to update position types based on the selected report
+@app.callback(
+    Output("position-type", "options"),
+    Output("position-type", "value"),
+    Input("report-dropdown", "value"),
+)
+def update_position_types(report):
+    if report is None:
+        return [], []
+
+    selected_report = report.split("_")[1]
+    categories = root_cols_desc.get(selected_report, {})
+    options = [{"label": label, "value": value} for value, label in categories.items()]
+    default_value = options[1]["value"] if options else None
+
+    return options, [default_value]
+
+
 # Callback to toggle the visibility of the price graph based on user input
 @app.callback(
     Output("price-graph", "style"),
@@ -354,6 +333,27 @@ def update_year_slider_and_price_dropdown_value(selected):
 )
 def toggle_price_graph_visibility(chart_together_value):
     return {"display": "none"} if chart_together_value != [True] else {}
+
+
+# Callback to toggle the correlation card's visibility
+@app.callback(
+    Output("correlation-card", "style"),
+    Input("show-corr", "n_clicks"),
+    Input("hide-corr", "n_clicks"),
+)
+def toggle_correlation_card(show_clicks, hide_clicks):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return {"display": "none"}  # Domyślnie ukryj kartę
+
+    button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+    if button_id == "show-corr" and show_clicks:
+        return {"display": "block"}  # Pokaż kartę po kliknięciu "Show Correlation Card"
+    elif button_id == "hide-corr" and hide_clicks:
+        return {"display": "none"}  # Ukryj kartę po kliknięciu "Hide Correlation Card"
+    else:
+        return dash.no_update  # Nie zmieniaj stanu karty
 
 
 # Callback to update various graphs based on user input

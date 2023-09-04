@@ -163,12 +163,12 @@ def make_graphs_card(
         # If market_commodity is selected, perform additional operations
         if market_commodity:
             df_price_weekly = df_price.resample("W").mean()
-            df_positions = pd.concat([df_price_weekly, df_positions], axis=1).fillna(
-                method="ffill"
-            )
+            df_positions = pd.concat(
+                [df_price_weekly, df_positions], axis=1
+            ).interpolate()
             df_percentages = pd.concat(
                 [df_price_weekly, df_percentages], axis=1
-            ).fillna(method="ffill")
+            ).interpolate()
 
             # df_positions = df_positions.interpolate() instead of ffill
 
@@ -261,7 +261,7 @@ def create_correlation_card(
             dbc.Col(
                 [
                     html.H4(
-                        f"Pearson's correlations percentage of {price_name.lower()} (percentages):"
+                        f"Pearson's correlations of {price_name.lower()} (percentages):"
                     ),
                     *correlation_text_percentage,
                 ]
