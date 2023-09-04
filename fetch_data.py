@@ -24,8 +24,20 @@ REPORTS = {
 
 # Function to fetch data
 def fetch_single_report(report_name):
-    current_year = dt.now().year
-    reporting_years = list(range(current_year - 1, current_year - 4, -1))
+    def find_common_codes(data_records, years_back):
+        current_year = dt.now().year
+        reporting_years = list(range(current_year, current_year - years_back, -1))
+        # Get unique market codes with data for at least the last 5 years
+        common_codes = None
+        for year in reporting_years:
+            codes = data_records[
+                data_records["yyyy_report_week_ww"].str[:4].astype(int) == year
+            ]["cftc_contract_market_code"].unique()
+            if common_codes is None:
+                common_codes = set(codes)
+            else:
+                common_codes &= set(codes)
+        return common_codes
 
     socrata_client = Socrata(
         "publicreporting.cftc.gov",
@@ -48,19 +60,12 @@ def fetch_single_report(report_name):
         )
     )
 
-    print(f"Number of record fetch: {data_records.shape[0]}")
+    print(f"Number of records fetched: {data_records.shape[0]}")
 
-    # Filter rows where "cftc_contract_market_code" is in the subquery result
-    # Wyodrębnij rok z kolumny 'yyyy_report_week_ww' i zapisz go w nowej kolumnie 'reporting_year'
-    data_records["reporting_year"] = (
-        data_records["yyyy_report_week_ww"].str.extract("(\d{4})").astype(int)
-    )
-
-    # Filtruj wiersze, które mają 'reporting_year' zawarte w zmiennej 'reporting_years'
-    data_records = data_records[data_records["reporting_year"].isin(reporting_years)]
-
-    # Usuń kolumnę 'reporting_year', jeśli nie jest już potrzebna
-    data_records.drop("reporting_year", axis=1, inplace=True)
+    codes_CFTC = find_common_codes(data_records, 6)
+    data_records = data_records[
+        data_records["cftc_contract_market_code"].isin(codes_CFTC)
+    ]
 
     # Convert column names to lowercase, remove the "_all" suffix, and replace "__" with "_"
     data_records.columns = [
@@ -80,7 +85,6 @@ def fetch_single_report(report_name):
     df_1 = data_records.iloc[:, :6]
     df_2 = data_records.iloc[:, 6:].apply(pd.to_numeric, errors="coerce")
     data_records = pd.concat([df_1, df_2], axis=1)
-    print(data_records.columns)
     for root in root_cols[report_name.split()[0].lower()]:
         print("Calculating net data for: " + root)
         data_records[f"{root}_net"] = data_records.apply(

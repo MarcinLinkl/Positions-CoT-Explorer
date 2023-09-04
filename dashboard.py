@@ -385,12 +385,7 @@ def map_column_name(report, column_name):
     category = root_cols_desc[report]
     name = ""
     print("column name: ", column_name)
-    if column_name.startswith("pct_of_oi"):
-        name += "Percentage of "
-        column_name = column_name.replace("pct_of_oi_", "")
-    else:
-        name += "Positions of "
-        column_name = column_name.replace("_positions", "")
+    column_name = column_name.replace("pct_of_oi_", "").replace("_positions", "")
     if column_name.endswith("_net"):
         sufix = " Net"
         column_name = column_name.replace("_net", "")
@@ -483,13 +478,17 @@ def update_graphs_callback(
                 [
                     dbc.Col(
                         [
-                            html.H3(f"Correlations of {price_name.lower()}:"),
+                            html.H4(
+                                f"Pearson's correlations of {price_name.lower()} (contracts):"
+                            ),
                             *correlation_text_positions,
                         ]
                     ),
                     dbc.Col(
                         [
-                            html.H3(f"Correlations of {price_name.lower()}:"),
+                            html.H4(
+                                f"Pearson's correlations percentage of {price_name.lower()} (percentages):"
+                            ),
                             *correlation_text_percentage,
                         ]
                     ),
@@ -603,4 +602,4 @@ def create_figure(df, name, columns_selected=False, price_chart=True, price_name
 
 
 if __name__ == "__main__":
-    app.run(debug=False, port=2020)
+    app.run(debug=False, port=2077)
