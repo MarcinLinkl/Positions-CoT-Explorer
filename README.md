@@ -108,8 +108,11 @@ The application is powered by a combination of libraries, tools, and frameworks:
 - ![SQLite Database](https://img.shields.io/badge/-SQLite-003B57?style=flat&logo=SQLite&logoColor=white&labelColor=003B57): Local database (`data.db`) for storing application data.
 - ![Socrata API](https://img.shields.io/badge/-Socrata%20API-3498DB?style=flat&logo=Socrata&logoColor=white&labelColor=3498DB): Fetch relevant data.
 - `reports_cols.py`: Custom report definitions for structuring and managing data.
-- `fetch_data.py`: [Socrata API](https://dev.socrata.com/) for data retrieval.
+- `fetch_data.py`: [Socrata API](https://dev.socrata.com/) for data retrieval and filtering by most available.
 - `ticker_finder.py`: Script to find and manage tickers.
-- `yahoo_tk_futures.json`: JSON file with Yahoo Finance futures ticker information.
+- `utils.py`: Contains functions for updating callbacks within the menu, enhancing user interaction with our application.
+- `data_operations.py`: Houses scripts responsible for identifying correlations between prices and positions, as well as generating graphs. This file is a critical component of our application, facilitating data analysis and visualization. 
+- `yahoo_tk_futures.json`: A JSON file that holds information about financial futures instrument tickers available on Yahoo Finance. This serves as a data source that enriches our financial data offerings.You can easly update it for specific ticker yfinnace values.
+- `dashboard.py`: The main execution program for our interactive dashboard.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

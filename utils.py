@@ -28,13 +28,11 @@ def get_commodities_opts(table):
     query_unique_commodities = (
         f"SELECT DISTINCT commodity_subgroup_name FROM {table} ORDER BY 1 ASC"
     )
-    print(query_unique_commodities)
     unique_commodities = pd.read_sql(query_unique_commodities, conn)[
         "commodity_subgroup_name"
     ]
 
     conn.close()
-    print(unique_commodities)
     dropdown_options = [
         {"label": commodity, "value": commodity} for commodity in unique_commodities
     ]
