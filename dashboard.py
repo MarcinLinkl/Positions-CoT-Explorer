@@ -4,6 +4,7 @@ from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
 from data_operations import *
 from reports_cols import root_cols_desc
+from ticker_finder import find_similar_ticker
 from utils import *
 
 # Load ticker data from Yahoo Finance
