@@ -32,7 +32,8 @@
 ### Application Overview
 Choose a report, commodity group, and commodity/exchange name. The "Select Price" dropdown will populate automatically.
 
-The application showcases silver correlations (Pearson's) between prices and assets in futures contracts positioning for Commercial and Non-Commercial groups for Net (Long-Short) and Long positions of traders.
+___The application showcases silver correlations (Pearson's) between prices and assets in futures contracts positioning for Commercial and Non-Commercial groups (Net (long side minus shorts)) and long positions of traders.___<br>
+Brief description: _Commercial net positions demonstrate the most pronounced negative correlation with price and asset positions, whereas Non-Commercial net positions exhibit the most significant positive correlation among the different groups._
 
 ![App Interface](assets/1.jpg "Positions Explorer Interface")
 
@@ -41,8 +42,8 @@ The application showcases silver correlations (Pearson's) between prices and ass
 The chart depicts the involvement of two major player groups: Commercial entities (silver producers) and Non-Commercial traders (speculators).
 
 ![App Interface](assets/2.jpg "Positions Explorer Charts")
-Short description: _When the net futures position of the Commercial group declines (turns negative), it signifies a rise in hedging activities when the price drops. In such instances, these entities are safeguarding their interests. Therefore, considering buying becomes favorable when their positions are notably high.
-Conversely, Non-Commercial positions tend to increase as prices surge. Low net positions for this group suggest that it could be a favorable time to buy, as they align with potential price uptrends._
+Brief Description: _When the net futures positions of the Commercial Group (producers) turn negative, it indicates an uptick in their hedging activities in anticipation of declining prices. In such situations, these entities take precautionary steps to protect their interests. As a result, it can be advantageous to contemplate asset purchases when their positions are significantly high, as this demonstrates a negative correlation.<br>
+Conversely, non-commercial entities often witness their positions expanding as prices rise. The relatively limited net positions held by this group suggest that it might be an opportune moment to consider buying, as these positions align with potential upward price trends. These substantial funds are exceptionally well-informed and have conducted extensive predictive price research since their interests are primarily speculative, thereby rendering price movements highly correlated with this group of traders._
 
 
 ### Understanding CFTC and CoT Reports
