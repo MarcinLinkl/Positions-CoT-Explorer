@@ -1,9 +1,6 @@
 # Function to map column names based on a report
 from dash import html
-from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
-from utils import *
-from ticker_finder import *
 import sqlite3
 import pandas as pd
 import yfinance as yf

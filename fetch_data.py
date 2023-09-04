@@ -1,14 +1,12 @@
-import datetime
-import numpy as np
 import pandas as pd
 from sodapy import Socrata
 from reports_cols import (
     report_api_cols,
     main_api_cols,
     root_cols,
-)  # Importuj raporty i ich kolumny z reports_cols.py
+)
 import sqlite3
-from requests.exceptions import RequestException
+
 from datetime import datetime as dt
 
 REPORTS = {

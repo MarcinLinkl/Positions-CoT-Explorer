@@ -2,8 +2,6 @@ import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
-from utils import *
-from ticker_finder import *
 from data_operations import *
 from reports_cols import root_cols_desc
 
