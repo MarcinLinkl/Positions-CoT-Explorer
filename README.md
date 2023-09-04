@@ -7,14 +7,14 @@
   <p align="center">
     Unearth speculative trading positions across markets with data from the United States Commodity Futures Trading Commission (CFTC)
     <br />
-    <a href="https://github.com/MarcinLinkl/Positions-CoT-Futures-Explorer"><strong>Explore the documentation »</strong></a>
+    <a href="https://github.com/MarcinLinkl/Positions-CoT-Explorer"><strong>Explore the documentation »</strong></a>
     <br />
     <br />
-    <!-- <a href="https://github.com/MarcinLinkl/Positions-CoT-Futures-Explorer">View Demo</a>
+    <!-- <a href="https://github.com/MarcinLinkl/Positions-CoT-Explorer">View Demo</a>
     · -->
-    <a href="https://github.com/MarcinLinkl/Positions-CoT-Futures-Explorer/issues">Report Bug</a>
+    <a href="https://github.com/MarcinLinkl/Positions-CoT-Explorer/issues">Report Bug</a>
     ·
-    <a href="https://github.com/MarcinLinkl/Positions-CoT-Futures-Explorer/issues">Request Feature</a>
+    <a href="https://github.com/MarcinLinkl/Positions-CoT-Explorer/issues">Request Feature</a>
   </p>
 </div>
 
