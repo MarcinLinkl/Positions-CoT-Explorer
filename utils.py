@@ -48,7 +48,6 @@ def get_market_opts(selected_commodity, report_table):
         "market_and_exchange_names"
     ]
     conn.close()
-    print(unique_commodities)
     dropdown_options = [
         {"label": commodity, "value": commodity} for commodity in unique_commodities
     ]

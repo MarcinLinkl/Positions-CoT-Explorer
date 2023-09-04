@@ -1,6 +1,5 @@
 # Function to map column names based on a report
-import dash
-from dash import dcc, html
+from dash import html
 from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
 from utils import *
@@ -14,7 +13,6 @@ from reports_cols import root_cols_desc, root_cols
 def map_column_name(report, column_name):
     category = root_cols_desc[report]
     name = ""
-    print("column name: ", column_name)
     column_name = column_name.replace("pct_of_oi_", "").replace("_positions", "")
     if column_name.endswith("_net"):
         sufix = " Net"
@@ -23,11 +21,8 @@ def map_column_name(report, column_name):
         sufix = " Short"
         column_name = column_name.replace("_short", "")
     elif column_name.endswith("_long"):
-        print("Detected suffix: _long")
         sufix = " Long"
         column_name = column_name.replace("_long", "")
-    print(column_name)
-    # Zaktualizowano poniższą linię, aby pobierać odpowiedni opis z kategorii
     name += category[column_name] + sufix
     return name
 
@@ -87,8 +82,6 @@ def create_figure(df, name, columns_selected=False, price_chart=True, price_name
 
     for col in df.columns:
         if col == "Close" and price_chart:
-            print("Close column in data..")
-            print("Adding Price Chart")
             fig["data"].append(
                 {
                     "x": df.index,
@@ -106,7 +99,6 @@ def create_figure(df, name, columns_selected=False, price_chart=True, price_name
             }
 
         elif col in columns_selected:
-            print(f"Adding Line for {col}")
             fig["data"].append(
                 {
                     "x": df.index,
@@ -146,9 +138,7 @@ def make_graphs_card(
 
     # Retrieve market commodity data if selected
     if market_commodity:
-        print("market_commodity ", market_commodity)
         df_data = get_data(report_type, market_commodity, years)
-
         df_percentages = df_data.filter(regex=r"^pct_of_oi")
         df_positions = df_data.drop(columns=df_percentages.columns)
 

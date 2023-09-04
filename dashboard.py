@@ -344,16 +344,16 @@ def toggle_price_graph_visibility(chart_together_value):
 def toggle_correlation_card(show_clicks, hide_clicks):
     ctx = dash.callback_context
     if not ctx.triggered:
-        return {"display": "none"}  # Domyślnie ukryj kartę
+        return {"display": "none"}
 
     button_id = ctx.triggered[0]["prop_id"].split(".")[0]
 
     if button_id == "show-corr" and show_clicks:
-        return {"display": "block"}  # Pokaż kartę po kliknięciu "Show Correlation Card"
+        return {"display": "block"}
     elif button_id == "hide-corr" and hide_clicks:
-        return {"display": "none"}  # Ukryj kartę po kliknięciu "Hide Correlation Card"
+        return {"display": "none"}
     else:
-        return dash.no_update  # Nie zmieniaj stanu karty
+        return dash.no_update
 
 
 # Callback to update various graphs based on user input
