@@ -166,6 +166,9 @@ data.sqbpro
 # idea folder pycharm
 .idea/
 
+# idea folder pycharm
+.idea
+
 # my temp scripts
 check.py
 what.py
