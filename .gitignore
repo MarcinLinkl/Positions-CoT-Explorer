@@ -161,6 +161,10 @@ cython_debug/
 
 # data
 data.db
+data.sqbpro
+
+# idea folder pycharm
+.idea/
 
 # my temp scripts
 check.py
