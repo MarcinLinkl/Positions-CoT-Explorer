@@ -144,15 +144,15 @@ root_cols = {
     },
     "supplemental": {
         "comm_positions_nocit",
-        "ncomm_positions_nocit",
+        "noncomm_positions_nocit",
         "nonrept_positions",
         "tot_rept_positions",
         "cit_positions",
-        "pct_oi_tot_rept_nocit",
-        "pct_oi_cit",
-        "pct_oi_noncomm_nocit",
-        "pct_oi_nonrept_nocit",
-        "pct_oi_comm_nocit",
+        "pct_of_oi_tot_rept_nocit",
+        "pct_of_oi_cit",
+        "pct_of_oi_noncomm_nocit",
+        "pct_of_oi_nonrept_nocit",
+        "pct_of_oi_comm_nocit",
     },
 }
 root_cols_desc = {
@@ -179,9 +179,10 @@ root_cols_desc = {
     },
     "supplemental": {
         "comm_nocit": "Commercial (Excluding CIT)",
-        "ncomm_nocit": "Non-Commercial (Excluding CIT)",
-        "nonrept": "Non-Reportable",
+        "noncomm_nocit": "Non-Commercial (Excluding CIT)",
+        "nonrept_nocit": "Non-Reportable (Excluding CIT)",
         "tot_rept_nocit": "Total Reportable (Excluding CIT)",
-        "cit": "CIT",
+        "tot_rept": "Total Reportable",
+        "nonrept": "Non-Reportable",
     },
 }

@@ -10,7 +10,11 @@ from reports_cols import root_cols_desc, root_cols
 def map_column_name(report, column_name):
     category = root_cols_desc[report]
     name = ""
-    column_name = column_name.replace("pct_of_oi_", "").replace("_positions", "")
+    column_name = (
+        column_name.replace("pct_of_oi_", "")
+        .replace("_positions", "")
+        .replace("pct_oi_", "")
+    )
     if column_name.endswith("_net"):
         sufix = " Net"
         column_name = column_name.replace("_net", "")

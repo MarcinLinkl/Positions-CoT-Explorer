@@ -64,18 +64,21 @@ def fetch_single_report(report_name):
     data_records = data_records[
         data_records["cftc_contract_market_code"].isin(codes_CFTC)
     ]
-
+    for x in data_records.columns:
+        print(x)
     # Convert column names to lowercase, remove the "_all" suffix, and replace "__" with "_"
     data_records.columns = [
         col.lower()
         .replace("_all", "")
         .replace("__", "_")
-        .replace("postions", "positions")
+        .replace("ncomm_postions", "noncomm_positions")
         .replace("_short_nocit", "_nocit_short")
         .replace("_long_nocit", "_nocit_long")
+        .replace("pct_oi", "pct_of_oi")
         for col in data_records.columns
     ]
-
+    for x in data_records.columns:
+        print(x)
     # Print the number of records to be saved
     print(
         f"After filtering for data spanning over three years, the number of records to be saved is: {data_records.shape[0]}"
@@ -111,5 +114,5 @@ def fetch_all_reports():
 
 
 if __name__ == "__main__":
-    # fetch_single_report("Supplemental - CIT")
-    fetch_all_reports()
+    fetch_single_report("Supplemental - CIT")
+    # fetch_all_reports()
