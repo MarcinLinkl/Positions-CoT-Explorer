@@ -129,11 +129,12 @@ root_cols_desc = {
         "tot_rept": "Total Reportable",
     },
     "disaggregated": {
-        "producer": "Producer",
+        "prod_merc": "Producer/Merchant",
         "swap": "Swap Dealer",
         "other_rept": "Other Reportable",
         "m_money": "Managed Money",
         "tot_rept": "Total Reportable",
+        "nonrept": "Non-Reportable",
     },
     "tff": {
         "tot_rept": "Total Reportable",

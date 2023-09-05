@@ -228,7 +228,7 @@ def get_correlation_text(report, correlations):
     )
     return [
         html.P(
-            f"{map_column_name(report, col)} {'positive: +' if correlation >= 0 else 'negative: -'}{abs(correlation):.2f}",
+            f"{map_column_name(report, col)} {'positive: ' if correlation >= 0 else 'negative: '}{correlation:.2f}",
             style={"margin": "5px"},
         )
         for col, correlation in sorted_correlations

@@ -12,9 +12,7 @@ def load_yahoo_tk_data():
 
 def get_reports_opts():
     with sqlite3.connect("data.db") as conn:
-        query = (
-            "SELECT name FROM sqlite_schema WHERE type='table' AND name like 'report_%'"
-        )
+        query = "SELECT name FROM sqlite_schema WHERE type='table' AND name like 'report_%' order by 1 asc"
         tables = pd.read_sql(query, conn)["name"]
 
     labels = [name.replace("report_", "").replace("_", " ").title() for name in tables]
