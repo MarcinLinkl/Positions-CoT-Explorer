@@ -317,7 +317,6 @@ def update_year_slider_and_price_dropdown_value(selected):
 def update_position_types(report):
     if report is None:
         return [], []
-
     selected_report = report.split("_")[1]
     categories = root_cols_desc.get(selected_report, {})
     options = [{"label": label, "value": value} for value, label in categories.items()]

@@ -6,7 +6,6 @@ from reports_cols import (
     root_cols,
 )
 import sqlite3
-
 from datetime import datetime as dt
 
 REPORTS = {
@@ -16,7 +15,6 @@ REPORTS = {
     "Disaggregated - Combined": "kh3c-gbw2",
     "TFF - Futures Only": "gpe5-46if",
     "TFF - Combined": "yw9f-hn96",
-    "Supplemental - CIT": "4zgm-a668",
 }
 
 
@@ -64,21 +62,13 @@ def fetch_single_report(report_name):
     data_records = data_records[
         data_records["cftc_contract_market_code"].isin(codes_CFTC)
     ]
-    for x in data_records.columns:
-        print(x)
+
     # Convert column names to lowercase, remove the "_all" suffix, and replace "__" with "_"
     data_records.columns = [
-        col.lower()
-        .replace("_all", "")
-        .replace("__", "_")
-        .replace("ncomm_postions", "noncomm_positions")
-        .replace("_short_nocit", "_nocit_short")
-        .replace("_long_nocit", "_nocit_long")
-        .replace("pct_oi", "pct_of_oi")
+        col.lower().replace("_all", "").replace("__", "_")
         for col in data_records.columns
     ]
-    for x in data_records.columns:
-        print(x)
+
     # Print the number of records to be saved
     print(
         f"After filtering for data spanning over three years, the number of records to be saved is: {data_records.shape[0]}"

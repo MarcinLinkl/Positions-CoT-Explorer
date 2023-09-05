@@ -79,28 +79,6 @@ report_api_cols = {
         "pct_of_oi_nonrept_long_all",
         "pct_of_oi_nonrept_short_all",
     ],
-    "supplemental": [
-        "NComm_Postions_Long_All_NoCIT",
-        "NComm_Postions_Short_All_NoCIT",
-        "comm_positions_long_all_nocit",
-        "Comm_Positions_Short_All_NoCIT",
-        "tot_rept_positions_long_all",
-        "tot_rept_positions_short",
-        "nonrept_positions_long_all",
-        "nonrept_positions_short_all",
-        "cit_positions_long_all",
-        "cit_positions_short_all",
-        "pct_oi_noncomm_long_all_nocit",
-        "Pct_OI_NonComm_Short_All_NoCIT",
-        "pct_oi_comm_long_all_nocit",
-        "pct_oi_comm_short_all_nocit",
-        "Pct_OI_Tot_Rept_Long_All_NoCIT",
-        "Pct_OI_Tot_Rept_Short_All_NoCIT",
-        "pct_oi_nonrept_long_all_nocit",
-        "Pct_OI_NonRept_Short_All_NoCIT",
-        "pct_oi_cit_long_all",
-        "pct_oi_cit_short_all",
-    ],
 }
 
 root_cols = {
@@ -142,18 +120,6 @@ root_cols = {
         "pct_of_oi_dealer",
         "pct_of_oi_asset_mgr",
     },
-    "supplemental": {
-        "comm_positions_nocit",
-        "noncomm_positions_nocit",
-        "nonrept_positions",
-        "tot_rept_positions",
-        "cit_positions",
-        "pct_of_oi_tot_rept_nocit",
-        "pct_of_oi_cit",
-        "pct_of_oi_noncomm_nocit",
-        "pct_of_oi_nonrept_nocit",
-        "pct_of_oi_comm_nocit",
-    },
 }
 root_cols_desc = {
     "legacy": {
@@ -176,13 +142,5 @@ root_cols_desc = {
         "nonrept": "Non-Reportable",
         "dealer": "Dealer",
         "other_rept": "Other Reportable",
-    },
-    "supplemental": {
-        "comm_nocit": "Commercial (Excluding CIT)",
-        "noncomm_nocit": "Non-Commercial (Excluding CIT)",
-        "nonrept_nocit": "Non-Reportable (Excluding CIT)",
-        "tot_rept_nocit": "Total Reportable (Excluding CIT)",
-        "tot_rept": "Total Reportable",
-        "nonrept": "Non-Reportable",
     },
 }

@@ -10,11 +10,7 @@ from reports_cols import root_cols_desc, root_cols
 def map_column_name(report, column_name):
     category = root_cols_desc[report]
     name = ""
-    column_name = (
-        column_name.replace("pct_of_oi_", "")
-        .replace("_positions", "")
-        .replace("pct_oi_", "")
-    )
+    column_name = column_name.replace("pct_of_oi_", "").replace("_positions", "")
     if column_name.endswith("_net"):
         sufix = " Net"
         column_name = column_name.replace("_net", "")
@@ -52,6 +48,7 @@ def get_data(report_type, selected_market_commodity, years):
     df_data.set_index("Date", inplace=True)
     df_data.index = pd.to_datetime(df_data.index)
     conn.close()
+
     return df_data
 
 
@@ -132,6 +129,7 @@ def make_graphs_card(
     fig_price, fig_positions, fig_percentages = {}, {}, {}
 
     # Extract the report type
+
     report = report_type.split("_")[1]
 
     # Initialize card_percentage as an empty list
@@ -140,12 +138,14 @@ def make_graphs_card(
     # Retrieve market commodity data if selected
     if market_commodity:
         df_data = get_data(report_type, market_commodity, years)
+        # divinding data to percentage cols and postions cols
         df_percentages = df_data.filter(regex=r"^pct_of_oi")
         df_positions = df_data.drop(columns=df_percentages.columns)
 
     # Retrieve price data if a ticker is selected
     if ticker:
         price_name = yahoo_tickers[ticker].upper()
+        # get price data from ticker at yf
         df_price = get_price_data(ticker, years)
         fig_price = create_figure(
             df_price, ticker, price_chart=True, price_name=price_name
@@ -154,29 +154,26 @@ def make_graphs_card(
         # If market_commodity is selected, perform additional operations
         if market_commodity:
             df_price_weekly = df_price.resample("W").mean()
-            df_positions = pd.concat(
-                [df_price_weekly, df_positions], axis=1
-            ).interpolate()
+            # concat price and data market
+            df_positions = pd.concat([df_price_weekly, df_positions], axis=1).fillna(
+                method="ffill"
+            )
+
+            # concat price and percentage market
             df_percentages = pd.concat(
                 [df_price_weekly, df_percentages], axis=1
-            ).interpolate()
-
-            # df_positions = df_positions.interpolate() instead of ffill
+            ).fillna(method="ffill")
 
             correlations_positions = df_positions.corr()["Close"].drop("Close")
-            sorted_correlations_positions = correlations_positions.abs().sort_values(
-                ascending=False
-            )
+
             correlation_text_positions = get_correlation_text(
-                report, sorted_correlations_positions
+                report, correlations_positions
             )
 
             correlations_percentage = df_percentages.corr()["Close"].drop("Close")
-            sorted_correlations_percentage = correlations_percentage.abs().sort_values(
-                ascending=False
-            )
+
             correlation_text_percentage = get_correlation_text(
-                report, sorted_correlations_percentage
+                report, correlations_percentage
             )
 
             # Create card_percentage with correlation information
@@ -226,12 +223,15 @@ def make_graphs_card(
 
 # method to get correlation text
 def get_correlation_text(report, correlations):
+    sorted_correlations = sorted(
+        correlations.items(), key=lambda x: abs(x[1]), reverse=True
+    )
     return [
         html.P(
-            f"{map_column_name(report, col)} {'positive: +' if correlations[col] >= 0 else 'negative: -'}{correlation:.2f}",
+            f"{map_column_name(report, col)} {'positive: +' if correlation >= 0 else 'negative: -'}{abs(correlation):.2f}",
             style={"margin": "5px"},
         )
-        for col, correlation in correlations.items()
+        for col, correlation in sorted_correlations
     ]
 
 
