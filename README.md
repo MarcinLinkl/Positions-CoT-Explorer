@@ -62,25 +62,43 @@ Legacy reports provide a breakdown of trading positions by exchange, including b
 1. Non-Commercial
 2. Commercial Traders (Large Hedgers)
 
-#### 2. Supplemental Reports
+The original COT reports, dating back for most futures contracts to the 1980’s. For trading purposes, these reports are the most useful, because of their long history and proven edge.
+
+#### 2. Disaggregated Reports
+
+Since October, 2009, two new types of COT reports are published, one of them is the Disaggregated report. The new report practically breaks down the Legacy report's Commercial category into smaller, more uniform pieces. Here are the categories explained:
+
+1. __Producer/Merchant/Processor/User__:
+companies that produce, process, pack or handle the physical commodity and use the futures markets to hedge price risks.
+
+2. __Swap dealer__:
+uses the futures markets to hedge price risks related to swaps. These traders may well be connected to speculative traders - this is the reason why the new category was needed. In most cases it is unknown that the counterparty is really a hedge fund or a commercial producer/processor.
+
+3. __Money manager__:
+a registered Commodity Trading Advisor (CTA), a Commodity Pool Operator (CPO) or an unregistered fund identified by the CFTC.
+
+4. __Other reportables__:
+large traders, effectively speculators, who cannot be classified in the above categories.
+#### 3. Traders in Financial Futures (TFF) Reports
+
+The Traders in Financial Futures (aka TIFF) report is a new report, its publication started in 2010, together with the Disaggregated COT reports. The philosophy behind these reports is the same as in case of Disaggregated data: to break down big trader categories into smaller, and more homogenous sub-parts. In case of financial futures, we cannot really speak of "producers" and "processors", on the other hand we can divide the users of these markets. Here are the categories explained:
+
+1. __Dealer/Intermediary:__
+typical 'sell side' companies, which sell financial products to clients and hedge their risks with futures contracts. They are not on the market to speculate, their main intention is to sell their price risk.
+
+2. __Asset Manager/Institutional__:
+institutional investors like pension and mutual funds, endowments, insurance companies.
+
+3. __Leveraged Funds__:
+typically hedge funds, including Commodity Trading Advisors (CTAs), Commodity Pool Operator (CPOs) and propriatery traders, also trading on behalf of clients.
+
+4. __Other reportables__:
+large traders which do not fit it the above three categories. Typically corporate treasuries, central banks, smaller banks, credit unions, mortgage originators.
+
+#### 4. Supplemental Reports
 
 The Supplemental report covers 13 selected agricultural commodity contracts for combined futures and options positions, with a specific focus on the agricultural sector.
-
-#### 3. Disaggregated Reports
-
-Disaggregated reports offer insights into trading positions in various sectors: Agriculture, Petroleum and Products, Natural Gas and Products, Electricity, Metals, and other physical contracts.
-
-Similar to Legacy reports, Disaggregated reports include both futures-only and combined futures and options positions. Reportable open interest positions in Disaggregated reports are classified into four categories:
-
-1. Producer/Merchant/Processor/User
-2. Swap Dealers
-3. Managed Money
-4. Other Reportables
-
-#### 4. Traders in Financial Futures (TFF) Reports
-
-TFF reports concentrate on financial contracts (Currencies, US Treasury Securities, Eurodollars, Stocks, VIX, Bloomberg Commodity Index)
-
+Has more history than the disaggregated reports, but still not enough, especially compared to the depth of the legacy reports. It was constructed to show the positions of commodity investment (commodity index tracking) funds. I not covert in this tool as it have the lowest trading value, and socrata at this moment is delivering very confusing/missed data.
 ### Use Cases
 
 Trading position reports serve various purposes in financial and commodities markets:
