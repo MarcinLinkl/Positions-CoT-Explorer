@@ -42,7 +42,7 @@ Brief description: _Commercial net positions demonstrate the most pronounced neg
 The chart depicts the involvement of two major player groups: Commercial entities (silver producers) and Non-Commercial traders (speculators).
 
 ![App Interface](assets/2.jpg "Positions Explorer Charts")
-Brief Description: _When the net futures positions of the Commercial Group (producers) turn negative, it indicates an uptick in their hedging activities in anticipation of declining prices. In such situations, these entities take precautionary steps to protect their interests. As a result, it can be advantageous to contemplate asset purchases when their positions are significantly high, as this demonstrates a negative correlation.<br>
+Explanation: _When the net futures positions of the Commercial Group (producers) turn negative, it indicates an uptick in their hedging activities in anticipation of declining prices. In such situations, these entities take precautionary steps to protect their interests. As a result, it can be advantageous to contemplate asset purchases when their positions are significantly high, as this demonstrates a negative correlation.<br>
 Conversely, non-commercial entities often witness their positions expanding as prices rise. The relatively limited net positions held by this group suggest that it might be an opportune moment to consider buying, as these positions align with potential upward price trends. These substantial funds are exceptionally well-informed and have conducted extensive predictive price research since their interests are primarily speculative, thereby rendering price movements highly correlated with this group of traders._
 
 
