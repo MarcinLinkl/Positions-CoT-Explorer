@@ -8,15 +8,6 @@ from reports_cols import (
 import sqlite3
 from datetime import datetime as dt
 
-REPORTS = {
-    "Legacy - Futures Only": "6dca-aqww",
-    "Legacy - Combined": "jun7-fc8e",
-    "Disaggregated - Futures Only": "72hh-3qpy",
-    "Disaggregated - Combined": "kh3c-gbw2",
-    "TFF - Futures Only": "gpe5-46if",
-    "TFF - Combined": "yw9f-hn96",
-}
-
 
 # Function to fetch data
 def fetch_single_report(report_name):
@@ -38,7 +29,7 @@ def fetch_single_report(report_name):
     socrata_client = Socrata(
         "publicreporting.cftc.gov",
         None
-        # Include your app token here
+        # Include your app token here if needed ( not much necessary, just try change IP, bc you can be blocked easy )
     )
 
     # Select the specific columns you want to fetch from the API
@@ -97,6 +88,16 @@ def fetch_single_report(report_name):
     print(f"Data successfully saved to the table '{table_name}' in the database.")
 
 
+REPORTS = {
+    "Legacy - Futures Only": "6dca-aqww",
+    "Legacy - Combined": "jun7-fc8e",
+    "Disaggregated - Futures Only": "72hh-3qpy",
+    "Disaggregated - Combined": "kh3c-gbw2",
+    "TFF - Futures Only": "gpe5-46if",
+    "TFF - Combined": "yw9f-hn96",
+}
+
+
 # all report saving
 def fetch_all_reports():
     for report_name in REPORTS:
@@ -104,5 +105,17 @@ def fetch_all_reports():
 
 
 if __name__ == "__main__":
-    fetch_single_report("Supplemental - CIT")
-    # fetch_all_reports()
+    keys = REPORTS.keys()
+
+    for index, key in enumerate(keys, start=1):
+        print(f"{index}. {key}")
+
+    user_input = input("Enter the report number (1-6) or 'all' to fetch all reports: ")
+
+    if user_input == "all":
+        fetch_all_reports()
+    elif user_input.isdigit() and 1 <= int(user_input) <= 6:
+        selected_report = list(REPORTS.keys())[int(user_input) - 1]
+        fetch_single_report(selected_report)
+    else:
+        print("Invalid choice. Please enter 'all' or a number from 1 to 6.")
