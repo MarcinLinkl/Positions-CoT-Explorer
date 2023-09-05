@@ -32,7 +32,7 @@
 ### Application Overview
 Choose a report, commodity group, and commodity/exchange name. The "Select Price" dropdown will populate automatically.
 
-___The application showcases silver correlations (Pearson's) between prices and assets in futures contracts positioning for Commercial and Non-Commercial groups (Net (long side minus shorts)) and long positions of traders.___<br>
+___The application showcases silver correlations (Pearson's) between prices and assets in futures contracts positioning for Commercial and Non-Commercial groups for net (long side minus shorts) and long positions.___<br>
 Brief description: _Commercial net positions demonstrate the most pronounced negative correlation with price and asset positions, whereas Non-Commercial net positions exhibit the most significant positive correlation among the different groups._
 
 ![App Interface](assets/1.jpg "Positions Explorer Interface")
