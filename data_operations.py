@@ -25,7 +25,7 @@ def map_column_name(report, column_name):
 
 
 # Function to retrieve data from a database
-def get_data(report_type, selected_market_commodity, years):
+def get_data(report_type, cftc_code, years):
     conn = sqlite3.connect("data.db")
     report = report_type.split("_")[1]
     roots = root_cols[report]
@@ -38,11 +38,11 @@ def get_data(report_type, selected_market_commodity, years):
     query = f"""
     SELECT report_date_as_yyyy_mm_dd, {column_str}
     FROM {report_type}
-    WHERE market_and_exchange_names = ?
+    WHERE cftc_contract_market_code = ?
     AND report_date_as_yyyy_mm_dd BETWEEN ? AND ?
     ORDER BY 1 ASC
     """
-    params = (selected_market_commodity, f"{years[0]}-01-01", f"{years[1]}-12-31")
+    params = (cftc_code, f"{years[0]}-01-01", f"{years[1]}-12-31")
     df_data = pd.read_sql(query, conn, params=params)
     df_data.rename(columns={"report_date_as_yyyy_mm_dd": "Date"}, inplace=True)
     df_data.set_index("Date", inplace=True)
@@ -113,7 +113,7 @@ def create_figure(df, name, columns_selected=False, price_chart=True, price_name
 def make_graphs_card(
     yahoo_tickers,
     report_type,
-    market_commodity,
+    cftc_code,
     positions,
     years,
     options,
@@ -136,8 +136,8 @@ def make_graphs_card(
     card_percentage = []
 
     # Retrieve market commodity data if selected
-    if market_commodity:
-        df_data = get_data(report_type, market_commodity, years)
+    if cftc_code:
+        df_data = get_data(report_type, cftc_code, years)
         # divinding data to percentage cols and postions cols
         df_percentages = df_data.filter(regex=r"^pct_of_oi")
         df_positions = df_data.drop(columns=df_percentages.columns)
@@ -152,7 +152,7 @@ def make_graphs_card(
         )
 
         # If market_commodity is selected, perform additional operations
-        if market_commodity:
+        if cftc_code:
             df_price_weekly = df_price.resample("W").mean()
             # concat price and data market
             df_positions = pd.concat([df_price_weekly, df_positions], axis=1).fillna(
@@ -182,13 +182,13 @@ def make_graphs_card(
             )
 
     # If market_commodity and positions are selected, process and create figures
-    if market_commodity and positions and options:
+    if cftc_code and positions and options:
         percentage_cols, positions_cols = [], []
 
         percentage_cols = [
             "pct_of_oi_" + x + "_" + y for x in positions for y in options
         ]
-
+        market_commodity = "commodity"
         positions_cols = [x + "_positions_" + y for x in positions for y in options]
         if add_price:
             fig_positions = create_figure(
