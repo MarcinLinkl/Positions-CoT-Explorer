@@ -40,7 +40,7 @@ app.layout = dbc.Container(
                     [
                         dbc.Label("Select a commodity subgroup:"),
                         dcc.Dropdown(
-                            id="commodities-dropdown",
+                            id="commodities-subgroup-dropdown",
                             placeholder="Select a commodity group",
                             optionHeight=50,
                             className="dash-dropdown",
@@ -241,7 +241,7 @@ app.layout = dbc.Container(
                 ),
                 dbc.Col(
                     dcc.Graph(
-                        id="commodity-graph",
+                        id="positions-graph",
                         className="col-12 my-2",
                     ),
                     className="col-12",
@@ -263,23 +263,24 @@ app.layout = dbc.Container(
 
 # Callback to update commodities dropdown options based on the selected report
 @app.callback(
-    Output("commodities-dropdown", "options"), Input("report-dropdown", "value")
+    Output("commodities-subgroup-dropdown", "options"),
+    Input("report-dropdown", "value"),
 )
 def update_commodities_dropdown(report):
     if report is None:
         return []
-    return get_commodities_opts(report)
+    return get_commodities_subgroup_opts(report)
 
 
 # Callback to update market dropdown options based on selected commodity and report
 @app.callback(
     Output("market-and-exchange-names-dropdown", "options"),
-    Input("commodities-dropdown", "value"),
+    Input("commodities-subgroup-dropdown", "value"),
     Input("report-dropdown", "value"),
 )
 def update_market_dropdown(selected_commodity, selected_report):
     if selected_commodity is None or selected_report is None:
-        return []
+        return [], []
     return get_market_opts(selected_commodity, selected_report)
 
 
@@ -297,7 +298,8 @@ def update_year_slider_and_price_dropdown_value(selected):
     if selected is None:
         return "Select a price chart:", None, 0, 0, [0, 0], {}
 
-    ticker_dropdown = find_similar_ticker(selected, yahoo_tickers)
+    name_market = json.loads(selected)["name_market"]
+    ticker_dropdown = find_similar_ticker(name_market, yahoo_tickers)
     price_chart_label = (
         "Price chart not found; may need to select one manually:"
         if ticker_dropdown is None
@@ -358,7 +360,7 @@ def toggle_correlation_card(show_clicks, hide_clicks):
 # Callback to update various graphs based on user input
 @app.callback(
     Output("price-graph", "figure"),
-    Output("commodity-graph", "figure"),
+    Output("positions-graph", "figure"),
     Output("correlation-card", "children"),
     Output("percentage-graph", "figure"),
     Input("report-dropdown", "value"),

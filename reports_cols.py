@@ -2,6 +2,7 @@ main_api_cols = [
     "commodity",
     "commodity_subgroup_name",
     "market_and_exchange_names",
+    "contract_units",
     "cftc_contract_market_code",
     "report_date_as_yyyy_mm_dd",
     "yyyy_report_week_ww",

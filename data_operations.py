@@ -5,6 +5,7 @@ import sqlite3
 import pandas as pd
 import yfinance as yf
 from reports_cols import root_cols_desc, root_cols
+import json
 
 
 def map_column_name(report, column_name):
@@ -26,14 +27,14 @@ def map_column_name(report, column_name):
 
 # Function to retrieve data from a database
 def get_data(report_type, cftc_code, years):
-    conn = sqlite3.connect("data.db")
-    report = report_type.split("_")[1]
-    roots = root_cols[report]
+    roots = root_cols[report_type.split("_")[1]]
     cols = (
         [f"{item}_net" for item in roots]
         + [f"{item}_long" for item in roots]
         + [f"{item}_short" for item in roots]
     )
+
+    conn = sqlite3.connect("data.db")
     column_str = ", ".join(list(cols))
     query = f"""
     SELECT report_date_as_yyyy_mm_dd, {column_str}
@@ -113,7 +114,7 @@ def create_figure(df, name, columns_selected=False, price_chart=True, price_name
 def make_graphs_card(
     yahoo_tickers,
     report_type,
-    cftc_code,
+    cftc_code_and_market_commodity,
     positions,
     years,
     options,
@@ -132,11 +133,14 @@ def make_graphs_card(
 
     report = report_type.split("_")[1]
 
-    # Initialize card_percentage as an empty list
-    card_percentage = []
+    # Initialize card correlation as an empty list
+    card_correlations = []
 
     # Retrieve market commodity data if selected
-    if cftc_code:
+    if cftc_code_and_market_commodity:
+        # Extract the cftc code
+        cftc_code_market_name = json.loads(cftc_code_and_market_commodity)
+        cftc_code = cftc_code_market_name["cftc_code"]
         df_data = get_data(report_type, cftc_code, years)
         # divinding data to percentage cols and postions cols
         df_percentages = df_data.filter(regex=r"^pct_of_oi")
@@ -151,8 +155,10 @@ def make_graphs_card(
             df_price, ticker, price_chart=True, price_name=price_name
         )
 
-        # If market_commodity is selected, perform additional operations
-        if cftc_code:
+        # If market_commodity is selected and ticker concat data
+        if cftc_code_and_market_commodity:
+            cftc_code_market_name = json.loads(cftc_code_and_market_commodity)
+            unit_name = cftc_code_market_name["units"]
             df_price_weekly = df_price.resample("W").mean()
             # concat price and data market
             df_positions = pd.concat([df_price_weekly, df_positions], axis=1).fillna(
@@ -177,20 +183,25 @@ def make_graphs_card(
             )
 
             # Create card_percentage with correlation information
-            card_percentage = create_correlation_card(
-                price_name, correlation_text_positions, correlation_text_percentage
+            card_correlations = create_correlation_card(
+                price_name,
+                correlation_text_positions,
+                correlation_text_percentage,
+                unit_name,
             )
 
     # If market_commodity and positions are selected, process and create figures
-    if cftc_code and positions and options:
+    if cftc_code_and_market_commodity and positions and options:
         percentage_cols, positions_cols = [], []
 
         percentage_cols = [
             "pct_of_oi_" + x + "_" + y for x in positions for y in options
         ]
-        market_commodity = "commodity"
+
+        market_commodity = cftc_code_market_name["name_market"]
+
         positions_cols = [x + "_positions_" + y for x in positions for y in options]
-        if add_price:
+        if add_price and price_name:
             fig_positions = create_figure(
                 df_positions,
                 market_commodity,
@@ -218,7 +229,7 @@ def make_graphs_card(
             )
 
     # Generate the formatted correlation text and return the figures
-    return fig_price, fig_positions, card_percentage, fig_percentages
+    return fig_price, fig_positions, card_correlations, fig_percentages
 
 
 # method to get correlation text
@@ -228,7 +239,7 @@ def get_correlation_text(report, correlations):
     )
     return [
         html.P(
-            f"{map_column_name(report, col)} {'positive: ' if correlation >= 0 else 'negative: '}{correlation:.2f}",
+            f"{map_column_name(report, col)} {'positive: +' if correlation >= 0 else 'negative: '}{correlation:.2f}",
             style={"margin": "5px"},
         )
         for col, correlation in sorted_correlations
@@ -237,14 +248,14 @@ def get_correlation_text(report, correlations):
 
 # method to create a correlation card
 def create_correlation_card(
-    price_name, correlation_text_positions, correlation_text_percentage
+    price_name, correlation_text_positions, correlation_text_percentage, contract_units
 ):
     return dbc.Row(
         [
             dbc.Col(
                 [
                     html.H4(
-                        f"Pearson's correlations of {price_name.lower()} (contracts):"
+                        f"Pearson's correlations of {price_name.lower()} (units: {contract_units} ):"
                     ),
                     *correlation_text_positions,
                 ]

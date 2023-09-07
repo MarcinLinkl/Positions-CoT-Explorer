@@ -67,6 +67,7 @@ def fetch_single_report(report_name, data_presence_years_back=5):
         data_records["cftc_contract_market_code"].isin(codes_CFTC)
     ]
 
+    # Print the number of records after filter for data spanning for specific number of years back
     print(
         f"After filtering for data spanning over {data_presence_years_back} years, the number of records to be saved is: {data_records.shape[0]}"
     )
@@ -77,7 +78,8 @@ def fetch_single_report(report_name, data_presence_years_back=5):
         for col in data_records.columns
     ]
 
-    report = "_".join(report_name.replace("- ", "").lower().split())
+    # Create a table name based on the report name
+    report_table = "report_" + "_".join(report_name.replace("- ", "").lower().split())
 
     # insert the report_id and report_name
     with sqlite3.connect("data.db") as db_connection:
@@ -88,12 +90,13 @@ def fetch_single_report(report_name, data_presence_years_back=5):
                 commodity TEXT,
                 commodity_subgroup_name TEXT,
                 market_and_exchange_names TEXT,
-                legacy_futures_only INTEGER DEFAULT 0,
-                legacy_combined INTEGER DEFAULT 0,
-                disaggregated_futures_only INTEGER DEFAULT 0,
-                disaggregated_combined INTEGER DEFAULT 0,
-                tff_futures_only INTEGER DEFAULT 0,
-                tff_combined INTEGER DEFAULT 0
+                report_legacy_futures_only INTEGER DEFAULT 0,
+                report_legacy_combined INTEGER DEFAULT 0,
+                report_disaggregated_futures_only INTEGER DEFAULT 0,
+                report_disaggregated_combined INTEGER DEFAULT 0,
+                report_tff_futures_only INTEGER DEFAULT 0,
+                report_tff_combined INTEGER DEFAULT 0,
+                contract_units TEXT
             )"""
         )
 
@@ -120,6 +123,7 @@ def fetch_single_report(report_name, data_presence_years_back=5):
                 .agg(
                     {
                         "commodity": "first",
+                        "contract_units": "first",
                         "market_and_exchange_names": "first",
                         "commodity_subgroup_name": "first",
                     }
@@ -173,7 +177,7 @@ def fetch_single_report(report_name, data_presence_years_back=5):
 
     with sqlite3.connect("data.db") as db_connection:
         codes_CFTC = [str(code) for code in codes_CFTC]
-        query = f"UPDATE cftc_codes SET {report} = True WHERE cftc_contract_market_code IN ({', '.join('?' for _ in codes_CFTC)})"
+        query = f"UPDATE cftc_codes SET {report_table} = True WHERE cftc_contract_market_code IN ({', '.join('?' for _ in codes_CFTC)})"
         db_connection.execute(query, codes_CFTC)
 
     # Delete 'market_and_exchange_names' and 'commodity' columns (only 'cftc_codes' will be used)
@@ -182,7 +186,8 @@ def fetch_single_report(report_name, data_presence_years_back=5):
             "market_and_exchange_names",
             "commodity",
             "commodity_subgroup_name",
-            "report_date_as_yyyy_mm_dd",
+            "yyyy_report_week_ww",
+            "contract_units",
         ],
         axis=1,
         inplace=True,
@@ -203,22 +208,19 @@ def fetch_single_report(report_name, data_presence_years_back=5):
     # Replace NaN values with None
     data_records = data_records.where(pd.notna(data_records), None)
 
-    # Create a table name for the SQLite database
-    table_name = "report_" + report
-
     # Save data to the 'data.db' database else rise exception
     with sqlite3.connect("data.db") as db_connection:
         try:
             data_records.to_sql(
-                table_name, db_connection, if_exists="replace", index=False
+                report_table, db_connection, if_exists="replace", index=False
             )
             print(
-                f"Data successfully saved to the table '{table_name}' in the database."
+                f"Data successfully saved to the table '{report_table}' in the database."
             )
 
         except Exception as e:
             print(
-                f"Failed to save data to the table '{table_name}' in the database. Error: {str(e)}"
+                f"Failed to save data to the table '{report_table}' in the database. Error: {str(e)}"
             )
 
 
