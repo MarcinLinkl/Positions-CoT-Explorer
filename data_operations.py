@@ -103,7 +103,7 @@ def create_figure(df, name, columns_selected=False, price_chart=True, price_name
                     "x": df.index,
                     "y": df[col],
                     "type": "line",
-                    "name": col.replace("pct_of_oi_", "Percentage of "),
+                    "name": col.replace("pct_of_oi_", "Percentage of ")
                     .replace("_", " ")
                     .upper()
                     .title(),
