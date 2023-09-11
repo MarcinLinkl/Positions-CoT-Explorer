@@ -26,7 +26,7 @@ def check_for_new_records():
     if latest_week is not None:
         current_week = datetime.date.today().strftime("%Y Report Week %W")
         if latest_week < current_week:
-            print(f"Latest report week: {latest_week}, current week: {current_week}")
+            print(f"latest report: {latest_week}, current week: {current_week}")
             fetch_new_all(latest_week)
     conn.close()
 
