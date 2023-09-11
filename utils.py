@@ -1,14 +1,34 @@
+import datetime
 import pandas as pd
 import sqlite3
 import json
 from bidict import bidict
 import json
+from fetch_data import fetch_new_all
 
 
 def load_yahoo_tk_data():
     with open("yahoo_tk_futures.json") as f:
         yahoo_tk_data = json.load(f)
     return bidict(yahoo_tk_data)
+
+
+def check_for_new_records():
+    try:
+        conn = sqlite3.connect("data.db")
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT MAX(yyyy_report_week_ww) FROM report_legacy_futures_only;"
+        )
+        latest_week = cursor.fetchone()[0]
+    except sqlite3.Error as e:
+        print("Error when checking for new reports:", e)
+    if latest_week is not None:
+        current_week = datetime.date.today().strftime("%Y Report Week %W")
+        if latest_week < current_week:
+            print(f"Latest report week: {latest_week}, current week: {current_week}")
+            fetch_new_all(latest_week)
+    conn.close()
 
 
 def get_reports_opts():

@@ -1,3 +1,4 @@
+import os
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
@@ -6,12 +7,23 @@ from data_operations import *
 from reports_cols import root_cols_desc
 from ticker_finder import find_similar_ticker
 from utils import *
+from fetch_data import fetch_all_reports
 
 # Load ticker data from Yahoo Finance
 yahoo_tickers = load_yahoo_tk_data()
 
 # Create a Dash web application instance
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SUPERHERO])
+
+if os.path.exists("data.db"):
+    print("Checking for new reports...")
+    check_for_new_records()
+else:
+    print("Database does not exist.")
+    print("Creating database.")
+    fetch_all_reports()
+
+
 app.title = "Positions Explorer"
 
 # Define the layout of the web application
@@ -170,8 +182,6 @@ app.layout = dbc.Container(
                         "Show correlations",
                         id="show-corr",
                         color="success",
-                        # className="custom-button",
-                        # className="col-2 text-center",  # zmieniono na col-2
                         style={
                             "display": "inline-block",
                             "max-height": "30px",
@@ -189,8 +199,6 @@ app.layout = dbc.Container(
                         "Hide correlations",
                         id="hide-corr",
                         color="success",
-                        # className="custom-button",
-                        # className="col-2 text-center",  # zmieniono na col-2
                         style={
                             "display": "inline-block",
                             "max-height": "30px",

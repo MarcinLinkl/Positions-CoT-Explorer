@@ -8,6 +8,14 @@ from reports_cols import (
 import sqlite3
 from datetime import datetime as dt
 
+REPORTS_TABLE = {
+    "report_legacy_futures_only": "6dca-aqww",
+    "report_legacy_combined": "jun7-fc8e",
+    "report_disaggregated_futures_only": "72hh-3qpy",
+    "report_disaggregated_combined": "kh3c-gbw2",
+    "report_tff_futures_only": "gpe5-46if",
+    "report_tff_combined": "yw9f-hn96",
+}
 
 REPORTS = {
     "Legacy - Futures Only": "6dca-aqww",
@@ -19,28 +27,118 @@ REPORTS = {
 }
 
 
-def fetch_single_report(report_name, data_presence_years_back=5):
-    # Method for get unique market codes with data for at least the last 5 years
-    def find_common_codes(data_records, data_presence_years_back):
-        current_year = dt.now().year
-        reporting_years = range(
-            current_year, current_year - data_presence_years_back, -1
+# all report saving
+def fetch_all_reports():
+    for report_name in REPORTS:
+        fetch_single_report(report_name)
+
+
+def fetch_new_all(last_week):
+    with sqlite3.connect("data.db") as conn:
+        query = (
+            "SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'report_%'"
+        )
+        tables = conn.execute(query).fetchall()[0]
+    for report_table in tables:
+        fetch_new_report(report_table, last_week)
+
+
+def fetch_new_report(report_table_name, last_week):
+    report_root_name = report_table_name.split("_")[1]
+    # Create a comma-separated list of selected columns for the API query
+    selected_columns = ",".join(main_api_cols + report_api_cols[report_root_name])
+
+    socrata_client = Socrata("publicreporting.cftc.gov", None)
+
+    # Fetch data from the Socrata API for the specified reporting year range and convert to a pandas DataFrame
+    data_records = pd.DataFrame.from_records(
+        socrata_client.get(
+            REPORTS_TABLE[report_table_name],
+            select=selected_columns,
+            where=f"yyyy_report_week_ww > '{last_week}'",
+            limit=999999,
+        )
+    )
+
+    # Print the number of records fetched
+    print(f"Number of records fetched: {data_records.shape[0]}")
+
+    if not data_records.empty:
+        print("New data found...")
+        print(f"Number of records fetched: {data_records.shape[0]}")
+        with sqlite3.connect("data.db") as db_connection:
+            # Create the 'cftc_codes' table if it doesn't exist
+            cursor = db_connection.cursor()
+            cursor.execute(
+                f"""
+                select cftc_contract_market_code from cftc_codes where {report_table_name}=1   
+            """
+            )
+            codes_CFTC = cursor.fetchall()[0]
+
+        # filtering data_records based on the condition
+        data_records = data_records[
+            data_records["cftc_contract_market_code"].isin(codes_CFTC)
+        ]
+        # Print the number of records prepared to save in db
+        print(f"Number of records to be saved: {data_records.shape[0]}")
+
+        # Convert column names to lowercase, remove the "_all" suffix, and replace "__" with "_"
+        data_records.columns = [
+            col.lower().replace("_all", "").replace("__", "_")
+            for col in data_records.columns
+        ]
+
+        # Delete 'market_and_exchange_names' and 'commodity' columns (only 'cftc_codes' will be used)
+        data_records.drop(
+            [
+                "market_and_exchange_names",
+                "commodity",
+                "commodity_subgroup_name",
+                "contract_units",
+            ],
+            axis=1,
+            inplace=True,
         )
 
-        common_codes = None
-        for year in reporting_years:
-            codes = data_records[
-                data_records["yyyy_report_week_ww"].str[:4].astype(int) == year
-            ]["cftc_contract_market_code"].unique()
-            if common_codes is None:
-                common_codes = set(codes)
-            else:
-                common_codes &= set(codes)
-        return common_codes
+        # change to numeric data values for saving properly types
+        df_1 = data_records.iloc[:, :3]
+        df_2 = data_records.iloc[:, 3:].apply(pd.to_numeric, errors="coerce")
+        data_records = pd.concat([df_1, df_2], axis=1)
 
+        # calc net positions
+        for root in root_cols[report_root_name]:
+            print("Calculating net data for: " + root)
+            data_records[f"{root}_net"] = data_records.apply(
+                lambda row: row[f"{root}_long"] - row[f"{root}_short"], axis=1
+            )
+
+        # Replace NaN values with None
+        data_records = data_records.where(pd.notna(data_records), None)
+
+        # Save data to the 'data.db' database else rise exception
+        with sqlite3.connect("data.db") as db_connection:
+            try:
+                data_records.to_sql(
+                    report_table_name, db_connection, if_exists="append", index=False
+                )
+                print(
+                    f"Data successfully saved to the table '{report_table_name}' in the database."
+                )
+
+            except Exception as e:
+                print(
+                    f"Failed to save data to the table '{report_table_name}' in the database. Error: {str(e)}"
+                )
+    else:
+        print("No new report found.")
+
+
+def fetch_single_report(report_name, data_presence_years_back=5):
     # Create a Socrata client
     socrata_client = Socrata("publicreporting.cftc.gov", None)
     report_main = report_name.split()[0].lower()
+
     # Select the specific columns you want to fetch from the API
     selected_columns = main_api_cols + report_api_cols[report_main]
 
@@ -135,45 +233,8 @@ def fetch_single_report(report_name, data_presence_years_back=5):
                 "cftc_codes", db_connection, if_exists="append", index=False
             )
             print(
-                f"New unique CFTC Contract Market Codes: '{len(unique_new_codes)}' and their names saved to cftc_codes table."
+                f"New unique CFTC Contract Market Codes - {len(unique_new_codes)} - saved to cftc_codes table."
             )
-
-        # extract the week number to table
-        dates_weeks = data_records[
-            ["yyyy_report_week_ww", "report_date_as_yyyy_mm_dd"]
-        ].drop_duplicates()
-
-        # sort dates
-        dates_weeks_sorted = dates_weeks.sort_values(
-            by="yyyy_report_week_ww", ascending=False
-        )
-
-        # connect and create to the 'dates_weeks' table if it doesn't exist
-        db_connection.execute(
-            """CREATE TABLE IF NOT EXISTS dates_weeks (
-                report_date_as_yyyy_mm_dd DATE PRIMARY KEY UNIQUE,
-                yyyy_report_week_ww TEXT
-            )"""
-        )
-
-        existing_weeks_query = (
-            "SELECT DISTINCT report_date_as_yyyy_mm_dd FROM dates_weeks"
-        )
-        existing_weeks = pd.read_sql(existing_weeks_query, db_connection)[
-            "report_date_as_yyyy_mm_dd"
-        ].unique()
-        new_weeks = pd.DataFrame()
-        # finding new dates
-        new_weeks = dates_weeks[
-            ~dates_weeks_sorted["report_date_as_yyyy_mm_dd"].isin(existing_weeks)
-        ]
-
-    if not new_weeks.empty:
-        with sqlite3.connect("data.db") as db_connection:
-            new_weeks.to_sql(
-                "dates_weeks", db_connection, if_exists="append", index=False
-            )
-            print("New dates and their names saved to 'dates_weeks' table.")
 
     with sqlite3.connect("data.db") as db_connection:
         codes_CFTC = [str(code) for code in codes_CFTC]
@@ -186,7 +247,6 @@ def fetch_single_report(report_name, data_presence_years_back=5):
             "market_and_exchange_names",
             "commodity",
             "commodity_subgroup_name",
-            "yyyy_report_week_ww",
             "contract_units",
         ],
         axis=1,
@@ -194,12 +254,12 @@ def fetch_single_report(report_name, data_presence_years_back=5):
     )
 
     # change to numeric data values for saving properly types
-    df_1 = data_records.iloc[:, :2]
-    df_2 = data_records.iloc[:, 2:].apply(pd.to_numeric, errors="coerce")
+    df_1 = data_records.iloc[:, :3]
+    df_2 = data_records.iloc[:, 3:].apply(pd.to_numeric, errors="coerce")
     data_records = pd.concat([df_1, df_2], axis=1)
 
     # calc net positions
-    for root in root_cols[report_name.split()[0].lower()]:
+    for root in root_cols[report_main]:
         print("Calculating net data for: " + root)
         data_records[f"{root}_net"] = data_records.apply(
             lambda row: row[f"{root}_long"] - row[f"{root}_short"], axis=1
@@ -224,10 +284,22 @@ def fetch_single_report(report_name, data_presence_years_back=5):
             )
 
 
-# all report saving
-def fetch_all_reports():
-    for report_name in REPORTS:
-        fetch_single_report(report_name)
+# Method for get unique market codes with data for at least the last 5 years
+def find_common_codes(data_records, data_presence_years_back):
+    current_year = dt.now().year
+    reporting_years = range(current_year, current_year - data_presence_years_back, -1)
+
+    common_codes = None
+    for year in reporting_years:
+        codes = data_records[
+            data_records["yyyy_report_week_ww"].str[:4].astype(int) == year
+        ]["cftc_contract_market_code"].unique()
+        if common_codes is None:
+            common_codes = set(codes)
+        else:
+            common_codes &= set(codes)
+
+    return common_codes
 
 
 if __name__ == "__main__":

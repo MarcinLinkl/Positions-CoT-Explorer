@@ -103,7 +103,10 @@ def create_figure(df, name, columns_selected=False, price_chart=True, price_name
                     "x": df.index,
                     "y": df[col],
                     "type": "line",
-                    "name": col,
+                    "name": col.replace("pct_of_oi_", "Percentage of "),
+                    .replace("_", " ")
+                    .upper()
+                    .title(),
                     "line": {"width": 1},
                     "yaxis": "y1",
                 }
@@ -135,7 +138,7 @@ def make_graphs_card(
 
     # Initialize card correlation as an empty list
     card_correlations = []
-
+    cftc_code_market_name = ""
     # Retrieve market commodity data if selected
     if cftc_code_and_market_commodity:
         # Extract the cftc code
@@ -157,8 +160,6 @@ def make_graphs_card(
 
         # If market_commodity is selected and ticker concat data
         if cftc_code_and_market_commodity:
-            cftc_code_market_name = json.loads(cftc_code_and_market_commodity)
-            unit_name = cftc_code_market_name["units"]
             df_price_weekly = df_price.resample("W").mean()
             # concat price and data market
             df_positions = pd.concat([df_price_weekly, df_positions], axis=1).fillna(
@@ -187,7 +188,6 @@ def make_graphs_card(
                 price_name,
                 correlation_text_positions,
                 correlation_text_percentage,
-                unit_name,
             )
 
     # If market_commodity and positions are selected, process and create figures
@@ -201,10 +201,12 @@ def make_graphs_card(
         market_commodity = cftc_code_market_name["name_market"]
 
         positions_cols = [x + "_positions_" + y for x in positions for y in options]
+
+        unit_name = cftc_code_market_name["units"]
         if add_price and price_name:
             fig_positions = create_figure(
                 df_positions,
-                market_commodity,
+                market_commodity + unit_name,
                 positions_cols,
                 True,
                 price_name,
@@ -248,15 +250,13 @@ def get_correlation_text(report, correlations):
 
 # method to create a correlation card
 def create_correlation_card(
-    price_name, correlation_text_positions, correlation_text_percentage, contract_units
+    price_name, correlation_text_positions, correlation_text_percentage
 ):
     return dbc.Row(
         [
             dbc.Col(
                 [
-                    html.H4(
-                        f"Pearson's correlations of {price_name.lower()} (units: {contract_units} ):"
-                    ),
+                    html.H4(f"Pearson's correlations of {price_name.lower()}:"),
                     *correlation_text_positions,
                 ]
             ),
