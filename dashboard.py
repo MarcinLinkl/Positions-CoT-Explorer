@@ -301,8 +301,9 @@ def update_market_dropdown(selected_commodity, selected_report):
     Output("year-slider", "value"),
     Output("year-slider", "marks"),
     Input("market-and-exchange-names-dropdown", "value"),
+    Input("report-dropdown", "value"),
 )
-def update_year_slider_and_price_dropdown_value(selected):
+def update_year_slider_and_price_dropdown_value(selected, report):
     if selected is None:
         return "Select a price chart:", None, 0, 0, [0, 0], {}
 
@@ -314,7 +315,7 @@ def update_year_slider_and_price_dropdown_value(selected):
         else f"Price chart found: {ticker_dropdown}, you can adjust manually if needed"
     )
 
-    min_y, max_y, values, marks = get_slider_opts(selected)
+    min_y, max_y, values, marks = get_slider_opts(selected, report)
     return price_chart_label, ticker_dropdown, min_y, max_y, values, marks
 
 

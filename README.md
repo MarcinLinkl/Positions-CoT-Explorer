@@ -98,7 +98,7 @@ large traders which do not fit it the above three categories. Typically corporat
 #### 4. Supplemental Reports
 
 The Supplemental report covers 13 selected agricultural commodity contracts for combined futures and options positions, with a specific focus on the agricultural sector.
-Has more history than the disaggregated reports, but still not enough, especially compared to the depth of the legacy reports. It was constructed to show the positions of commodity investment (commodity index tracking) funds. I not covert in this tool as it have the lowest trading value, and socrata at this moment is delivering very confusing/missed data.
+Has more history than the disaggregated reports, but still not enough, especially compared to the depth of the legacy reports. It was constructed to show the positions of commodity investment (commodity index tracking) funds. I removed this report from the application because it has the lowest trading value, and at this moment, Socrata is providing very confusing and incomplete data.
 ### Use Cases
 
 Trading position reports serve various purposes in financial and commodities markets:

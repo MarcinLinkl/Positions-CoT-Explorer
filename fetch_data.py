@@ -1,5 +1,4 @@
 import pandas as pd
-from requests import ReadTimeout
 from sodapy import Socrata
 from reports_cols import (
     report_api_cols,
@@ -8,7 +7,6 @@ from reports_cols import (
 )
 import sqlite3
 from datetime import datetime as dt
-from requests.exceptions import Timeout
 
 REPORTS_TABLE = {
     "report_legacy_futures_only": "6dca-aqww",
@@ -148,7 +146,7 @@ def fetch_new_report(report_table_name, last_week):
         print(f"Error occurred: {e}")
 
 
-def fetch_single_report(report_name, data_presence_years_back=5):
+def fetch_single_report(report_name, data_presence_years_back=3):
     # Create a Socrata client
     socrata_client = Socrata("publicreporting.cftc.gov", None)
     report_main = report_name.split()[0].lower()

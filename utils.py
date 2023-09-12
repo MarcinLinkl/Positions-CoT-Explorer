@@ -88,22 +88,26 @@ def get_market_opts(selected_commodity, report):
     return dropdown_options
 
 
-def get_slider_range_dates(selected_cftc_code):
+def get_slider_range_dates(selected_cftc_code, report):
     cftc_code = json.loads(selected_cftc_code)["cftc_code"]
     conn = sqlite3.connect("data.db")
-    query_min_max_dates = f"SELECT MIN(report_date_as_yyyy_mm_dd) as min_date, MAX(report_date_as_yyyy_mm_dd) as max_date FROM report_legacy_futures_only where cftc_contract_market_code = {cftc_code} "
+    query_min_max_dates = f"SELECT MIN(report_date_as_yyyy_mm_dd) as min_date, MAX(report_date_as_yyyy_mm_dd) as max_date FROM {report} where cftc_contract_market_code = '{cftc_code}' "
     min_max_dates = pd.read_sql(query_min_max_dates, conn)
-    min_date, max_date = (
-        int(min_max_dates["min_date"].iloc[0][:4]),
-        int(min_max_dates["max_date"].iloc[0][:4]),
-    )
-
+    min_date = min_max_dates["min_date"].iloc[0]
+    max_date = min_max_dates["max_date"].iloc[0]
     conn.close()
+    if min_date is not None and max_date is not None:
+        min_date = int(min_date[:4])
+        max_date = int(max_date[:4])
+    else:
+        min_date = 0
+        max_date = 0
+        # Handle the case where no data was found, e.g., by returning some default values.
     return min_date, max_date
 
 
-def get_slider_opts(selected_cftc_code):
-    min_date, max_date = get_slider_range_dates(selected_cftc_code)
+def get_slider_opts(selected_cftc_code, report):
+    min_date, max_date = get_slider_range_dates(selected_cftc_code, report)
     # Tworzymy znaczniki (marks) dla slidera
     if (max_date - min_date) < 6:
         marks_step = 1

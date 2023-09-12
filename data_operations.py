@@ -203,7 +203,7 @@ def make_graphs_card(
         positions_cols = [x + "_positions_" + y for x in positions for y in options]
 
         unit_name = cftc_code_market_name["units"]
-        if add_price and price_name:
+        if add_price and ticker:
             fig_positions = create_figure(
                 df_positions,
                 market_commodity + unit_name,

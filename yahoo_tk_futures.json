@@ -6,7 +6,7 @@
     "6A=F": "Australian Dollar Futures",
     "BTC=F": "Bitcoin Futures",
     "BTC-USD": "Bitcoin USD",
-    "AW=F": "Bloomberg Commodity Index Futures",
+    "^BCOM": "BBG Commodity",
     "BZ=F": "Brent Crude Oil Last Day Finan",
     "^VIX": "CBOE Volatility Index",
     "CB=F": "Cash-settled Butter",
