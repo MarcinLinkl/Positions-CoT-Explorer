@@ -288,10 +288,13 @@ def update_commodities_dropdown(report):
     Input("commodities-subgroup-dropdown", "value"),
     Input("report-dropdown", "value"),
 )
-def update_market_dropdown(selected_commodity, selected_report):
-    if selected_commodity is None or selected_report is None:
+def update_market_dropdown(selected_commodity_subgroup, selected_report):
+    if selected_report and not selected_commodity_subgroup:
+        return get_market_opts(report=selected_report)
+    elif selected_commodity_subgroup or selected_report:
+        return get_market_opts(selected_report, selected_commodity_subgroup)
+    else:
         return [], []
-    return get_market_opts(selected_commodity, selected_report)
 
 
 # Callback to update various components including price chart label, slider, and more

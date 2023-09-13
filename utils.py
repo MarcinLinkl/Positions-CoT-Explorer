@@ -14,28 +14,41 @@ def load_yahoo_tk_data():
 
 
 def check_for_new_records():
-    current_week = datetime.date.today().strftime("%Y Report Week %W")
+    current_date = datetime.date.today()
     check_latest_weeks_table = []
-    print("current week: ", current_week)
+    print("Current week:", current_date.strftime("%Y Week %W"))
     try:
         with sqlite3.connect("data.db") as conn:
             cursor = conn.cursor()
             query = "SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'report_%'"
-            tables = conn.execute(query).fetchall()
+            cursor.execute(query)
+            tables = cursor.fetchall()
             for table in tables:
-                table_name=table[0]
-                query_max_week = f"SELECT MAX(yyyy_report_week_ww) FROM {table_name};"
+                table_name = table[0]
+                query_max_week = f"SELECT MAX(yyyy_report_week_ww) as week_report, MAX(report_date_as_yyyy_mm_dd) as report_date FROM {table_name}"
                 cursor.execute(query_max_week)
-                latest_week = cursor.fetchone()[0]
-                latest_week = latest_week if latest_week is not None else "0"
-                if latest_week < current_week:
-                    print(f"{table_name.replace('_', ' ').title()}, latest Week: {latest_week}.Checked for new one.")
-                    check_latest_weeks_table.append((table_name, latest_week))
+                latest_week, latest_report_date = cursor.fetchone()
+                if latest_report_date:
+                    latest_report_date = datetime.datetime.strptime(
+                        latest_report_date, "%Y-%m-%dT%H:%M:%S.%f"
+                    ).date()
+                    days_diff = (current_date - latest_report_date).days
+                    if days_diff >= 10:
+                        print(
+                            f"{table_name.replace('_', ' ').title()}, latest Week: {latest_week}. Checked for new one."
+                        )
+                        check_latest_weeks_table.append((table_name, latest_week))
+                    else:
+                        print(
+                            f"{table_name.replace('_', ' ').title()}, latest Week: {latest_week}."
+                        )
     except sqlite3.Error as e:
         print("Error when checking for new reports:", e)
         return None
-    if check_latest_weeks_table is not None:
+    if check_latest_weeks_table:
         fetch_new_all(check_latest_weeks_table)
+    else:
+        print("Data up to date.")
 
 
 def get_reports_opts():
@@ -64,12 +77,22 @@ def get_commodities_subgroup_opts(report):
     return dropdown_options
 
 
-def get_market_opts(selected_commodity, report):
-    # Pobranie unikalnych towarów z bazy danych do listy wyboru
-    conn = sqlite3.connect("data.db")
-    query_unique_commodities = f'SELECT DISTINCT market_and_exchange_names,cftc_contract_market_code,contract_units FROM cftc_codes where {report}=1 and commodity_subgroup_name="{selected_commodity}" ORDER BY 1 ASC'
-    unique_commodities_df = pd.read_sql(query_unique_commodities, conn)
-    conn.close()
+def get_market_opts(report, selected_commodity=None):
+    query_and_where = (
+        f"and commodity_subgroup_name = '{selected_commodity}'"
+        if selected_commodity
+        else ""
+    )
+
+    with sqlite3.connect("data.db") as conn:
+        query_unique_commodities = f"""
+            SELECT DISTINCT market_and_exchange_names, cftc_contract_market_code, contract_units 
+            FROM cftc_codes 
+            WHERE {report} = 1 {query_and_where}
+            ORDER BY 1 ASC
+        """
+        unique_commodities_df = pd.read_sql_query(query_unique_commodities, conn)
+
     unique_commodities_df.drop_duplicates(
         subset="cftc_contract_market_code", inplace=True
     )
@@ -85,11 +108,9 @@ def get_market_opts(selected_commodity, report):
                 }
             ),
         }
-        for name_market, cftc_code, contract_units in zip(
-            unique_commodities_df["market_and_exchange_names"],
-            unique_commodities_df["cftc_contract_market_code"],
-            unique_commodities_df["contract_units"],
-        )
+        for name_market, cftc_code, contract_units in unique_commodities_df[
+            ["market_and_exchange_names", "cftc_contract_market_code", "contract_units"]
+        ].itertuples(index=False)
     ]
 
     return dropdown_options
@@ -115,11 +136,10 @@ def get_slider_range_dates(selected_cftc_code, report):
 
 def get_slider_opts(selected_cftc_code, report):
     min_date, max_date = get_slider_range_dates(selected_cftc_code, report)
-    # Tworzymy znaczniki (marks) dla slidera
+    # we maake mark step 2 if min_date - max_date < 6
     if (max_date - min_date) < 6:
         marks_step = 1
     else:
         marks_step = 2
     marks = {year: str(year) for year in range(min_date, max_date + 1, marks_step)}
-    # Zwracamy nowy zakres slidera oraz znaczniki
     return min_date, max_date, [min_date, max_date], marks
