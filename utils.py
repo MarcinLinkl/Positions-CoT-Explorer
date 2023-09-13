@@ -14,21 +14,28 @@ def load_yahoo_tk_data():
 
 
 def check_for_new_records():
+    current_week = datetime.date.today().strftime("%Y Report Week %W")
+    check_latest_weeks_table = []
+    print("current week: ", current_week)
     try:
-        conn = sqlite3.connect("data.db")
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT MAX(yyyy_report_week_ww) FROM report_legacy_futures_only;"
-        )
-        latest_week = cursor.fetchone()[0]
+        with sqlite3.connect("data.db") as conn:
+            cursor = conn.cursor()
+            query = "SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'report_%'"
+            tables = conn.execute(query).fetchall()
+            for table in tables:
+                table_name=table[0]
+                query_max_week = f"SELECT MAX(yyyy_report_week_ww) FROM {table_name};"
+                cursor.execute(query_max_week)
+                latest_week = cursor.fetchone()[0]
+                latest_week = latest_week if latest_week is not None else "0"
+                if latest_week < current_week:
+                    print(f"{table_name.replace('_', ' ').title()}, latest Week: {latest_week}.Checked for new one.")
+                    check_latest_weeks_table.append((table_name, latest_week))
     except sqlite3.Error as e:
         print("Error when checking for new reports:", e)
-    if latest_week is not None:
-        current_week = datetime.date.today().strftime("%Y Report Week %W")
-        if latest_week < current_week:
-            print(f"latest report: {latest_week}, current week: {current_week}")
-            fetch_new_all(latest_week)
-    conn.close()
+        return None
+    if check_latest_weeks_table is not None:
+        fetch_new_all(check_latest_weeks_table)
 
 
 def get_reports_opts():

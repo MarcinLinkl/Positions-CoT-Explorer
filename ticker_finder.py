@@ -40,5 +40,5 @@ def find_similar_ticker(commodity_selected, data_tickers):
             print("Ticker found ", tk)
             return tk
         else:
-            print("Non matching ticker.")
+            print("No matching ticker found.")
             return None

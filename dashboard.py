@@ -13,6 +13,8 @@ from fetch_data import fetch_all_reports
 yahoo_tickers = load_yahoo_tk_data()
 
 # Create a Dash web application instance
+
+
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SUPERHERO])
 
 if os.path.exists("data.db"):
@@ -175,7 +177,7 @@ app.layout = dbc.Container(
                         switch=True,
                         className="text-center",
                     ),
-                    className="col-lg-2 col-3 my-2",
+                    className="col-lg-2 col-6 my-2",
                 ),
                 dbc.Col(
                     dbc.Button(
@@ -228,7 +230,7 @@ app.layout = dbc.Container(
                         },
                         className="text-center",
                     ),
-                    className="col-lg-3 col-3 my-2",
+                    className="col-lg-3 col-6 my-2",
                 ),
             ]
         ),
