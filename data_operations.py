@@ -133,7 +133,6 @@ def make_graphs_card(
     fig_price, fig_positions, fig_percentages = {}, {}, {}
 
     # Extract the report type
-
     report = report_type.split("_")[1]
 
     # Initialize card correlation as an empty list

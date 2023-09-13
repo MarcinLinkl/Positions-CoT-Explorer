@@ -104,7 +104,7 @@ app.layout = dbc.Container(
                         dcc.Dropdown(
                             id="chart-price-dropdown",
                             options=[
-                                {"label": f"Price of {j.lower()}", "value": i}
+                                {"label": f"Price of {j.upper()}", "value": i}
                                 for i, j in yahoo_tickers.items()
                             ],
                             placeholder="Select price",
@@ -291,7 +291,7 @@ def update_commodities_dropdown(report):
 def update_market_dropdown(selected_commodity_subgroup, selected_report):
     if selected_report and not selected_commodity_subgroup:
         return get_market_opts(report=selected_report)
-    elif selected_commodity_subgroup or selected_report:
+    elif selected_report and selected_commodity_subgroup:
         return get_market_opts(selected_report, selected_commodity_subgroup)
     else:
         return [], []
@@ -309,7 +309,7 @@ def update_market_dropdown(selected_commodity_subgroup, selected_report):
     Input("report-dropdown", "value"),
 )
 def update_year_slider_and_price_dropdown_value(selected, report):
-    if selected is None:
+    if selected is None or report is None:
         return "Select a price chart:", None, 0, 0, [0, 0], {}
 
     name_market = json.loads(selected)["name_market"]
@@ -388,6 +388,8 @@ def toggle_correlation_card(show_clicks, hide_clicks):
 def update_graphs_callback(
     report_type, market_commodity, positions, years, options, ticker, add_price
 ):
+    if report_type is None or market_commodity is None or ticker is None:
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update
     return make_graphs_card(
         yahoo_tickers,
         report_type,
