@@ -1,4 +1,5 @@
 import pandas as pd
+import requests
 from sodapy import Socrata
 import urllib3
 from reports_cols import (
@@ -10,7 +11,7 @@ import sqlite3
 from datetime import datetime as dt
 import time
 
-YEARS_BACK_FOR_CODES_AVABILITY = 4
+YEARS_BACK_FOR_CODES_AVABILITY = 3
 
 REPORTS_TABLE = {
     "report_legacy_futures_only": "6dca-aqww",
@@ -50,8 +51,8 @@ def get_socrata_api_data(report_code, selected_columns, last_week=""):
             )
             # succes, break loop
             break
-        except urllib3.exceptions.NewConnectionError:
-            print(f"Connection to internet problem... ")
+        except requests.exceptions.RequestException as e:
+            print(f"Timeout: Read timed out... ")
             break
         except Exception as e:
             print(f"Attempt {attempt} failed.", print(e))
@@ -135,8 +136,10 @@ def fetch_new_report(report_table_name_and_week):
         # calc net positions
         for root in root_cols[report_root_name]:
             print("Calculating net data for: " + root)
-            data_records[f"{root}_net"] = data_records.apply(
-                lambda row: row[f"{root}_long"] - row[f"{root}_short"], axis=1
+            long_col = f"{root}_long"
+            short_col = f"{root}_short"
+            data_records[f"{root}_net"] = data_records[long_col].sub(
+                data_records[short_col]
             )
 
         # Replace NaN values with None

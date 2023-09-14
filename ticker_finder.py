@@ -1,6 +1,8 @@
 import difflib
+
+
 def similarity_score(s1, s2):
-    #Function to calculate the similarity between strings s1 and s2
+    # Function to calculate the similarity between strings s1 and s2
     s1_lower = s1.lower()
     s2_lower = s2.lower()
     matcher = difflib.SequenceMatcher(None, s1_lower, s2_lower)
@@ -15,7 +17,6 @@ def find_similar_ticker(commodity_selected, data_tickers):
         .replace("-", " ")
     )
     commodity_selected = " ".join(commodity_selected.split()[:3])
-
     best_match = None
     best_score = 0.0
 

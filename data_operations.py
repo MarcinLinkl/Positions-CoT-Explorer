@@ -255,15 +255,13 @@ def create_correlation_card(
         [
             dbc.Col(
                 [
-                    html.H4(f"Pearson's correlations of {price_name.lower()}:"),
+                    html.H4(f"PEARSON'S CORRELATIONS OF {price_name.upper()}:"),
                     *correlation_text_positions,
                 ]
             ),
             dbc.Col(
                 [
-                    html.H4(
-                        f"Pearson's correlations of {price_name.lower()} (percentages):"
-                    ),
+                    html.H4(f"PEARSON'S CORRELATIONS OF {price_name.upper()} [%]:"),
                     *correlation_text_percentage,
                 ]
             ),

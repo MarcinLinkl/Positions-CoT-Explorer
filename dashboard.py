@@ -388,7 +388,7 @@ def toggle_correlation_card(show_clicks, hide_clicks):
 def update_graphs_callback(
     report_type, market_commodity, positions, years, options, ticker, add_price
 ):
-    if report_type is None or market_commodity is None or ticker is None:
+    if report_type is None or market_commodity is None:
         return dash.no_update, dash.no_update, dash.no_update, dash.no_update
     return make_graphs_card(
         yahoo_tickers,
