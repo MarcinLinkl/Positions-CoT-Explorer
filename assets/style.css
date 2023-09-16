@@ -1,23 +1,10 @@
 /* Dla kolumn zawierających Dropdowny */
 .dash-dropdown {
     text-shadow: 4px 4px 4px #afafaffe;
-    /*    #bfbfbf5e ;*/
     color: green;
-    /*    color: blue;*/
-
     font-weight: bold;
 }
 
-/* .custom-button {
-    display: inline-block;
-    max-height: 30px;
-    border-radius: 15px;
-    text-align: center;
-    margin: 0;
-    padding: 0;
-    width: calc(50%);
-    /* width: calc(50% - 7.5px); */
-/* Szerokość dwóch kolumn - 7.5px odstępu */
+h4 {
+    color: rgb(189, 213, 255);
 }
-
-*/

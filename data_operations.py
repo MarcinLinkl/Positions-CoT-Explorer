@@ -114,7 +114,7 @@ def create_figure(df, name, columns_selected=False, price_chart=True, price_name
     return fig
 
 
-def make_graphs_card(
+def make_graphs_and_cards(
     yahoo_tickers,
     report_type,
     cftc_code_and_market_commodity,
@@ -205,7 +205,7 @@ def make_graphs_card(
         if add_price and ticker:
             fig_positions = create_figure(
                 df_positions,
-                market_commodity + unit_name,
+                market_commodity + " " + unit_name,
                 positions_cols,
                 True,
                 price_name,

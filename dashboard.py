@@ -390,7 +390,7 @@ def update_graphs_callback(
 ):
     if report_type is None or market_commodity is None:
         return dash.no_update, dash.no_update, dash.no_update, dash.no_update
-    return make_graphs_card(
+    return make_graphs_and_cards(
         yahoo_tickers,
         report_type,
         market_commodity,

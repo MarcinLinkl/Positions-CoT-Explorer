@@ -15,6 +15,7 @@ def find_similar_ticker(commodity_selected, data_tickers):
         .replace("index", "")
         .replace("futures", "")
         .replace("-", " ")
+        .replace("ultra","")
     )
     commodity_selected = " ".join(commodity_selected.split()[:3])
     best_match = None
