@@ -25,7 +25,11 @@
   - [Understanding CFTC and CoT Reports](#understanding-cftc-and-cot-reports)
   - [Trading Position Reports](#trading-position-reports)
   - [Use Cases](#use-cases)
+<<<<<<< HEAD
   - [Running App](#running-app)
+=======
+  - [Running App](#Running the Application)
+>>>>>>> acd0f976cc8826b012fcef35a3100f7c4fe482ab
 - [Tech Stack](#tech-stack)
 
 ## About the Project
@@ -114,7 +118,11 @@ Trading position reports serve various purposes in financial and commodities mar
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+<<<<<<< HEAD
 ### Running App
+=======
+### Running the Application
+>>>>>>> acd0f976cc8826b012fcef35a3100f7c4fe482ab
 
 To run the Positions CoT Explorer locally, follow these steps:
 
