@@ -6,21 +6,21 @@ from bidict import bidict
 import json
 from fetch_data import fetch_new_all
 
-
 def load_yahoo_tk_data():
+    """Load Yahoo Tk Futures data from a JSON file and return it as a bidirectional dictionary."""
     with open("yahoo_tk_futures.json") as f:
         yahoo_tk_data = json.load(f)
     return bidict(yahoo_tk_data)
-
 
 import sqlite3
 import datetime
 import logging
 
-# Configure logging
+# Configure logging to display debug information
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def check_for_new_records():
+    """Check for tables with outdated data and fetch new records if necessary."""
     # Get the current date
     current_date = datetime.date.today()
     check_latest_weeks_table = []
@@ -92,25 +92,23 @@ def check_for_new_records():
     else:
         logging.info("Data up to date.")
 
-
-
 def get_reports_opts():
+    """Retrieve and format the list of report table names from the database."""
     with sqlite3.connect("data.db") as conn:
         query = "SELECT name FROM sqlite_schema WHERE type='table' AND name like 'report_%' order by 1 asc"
         tables = pd.read_sql(query, conn)["name"]
 
+    # Format table names to be more readable
     labels = [name.replace("report_", "").replace("_", " ").title() for name in tables]
     values = [name for name in tables]
 
     return [{"label": label, "value": value} for label, value in zip(labels, values)]
 
-
 def get_commodities_subgroup_opts(report):
+    """Retrieve and format unique commodity subgroups for a specific report."""
     conn = sqlite3.connect("data.db")
     query_unique_commodities = f"SELECT DISTINCT commodity_subgroup_name FROM cftc_codes where {report} = 1 ORDER BY 1 ASC"
-    unique_commodities = pd.read_sql(query_unique_commodities, conn)[
-        "commodity_subgroup_name"
-    ]
+    unique_commodities = pd.read_sql(query_unique_commodities, conn)["commodity_subgroup_name"]
 
     conn.close()
     dropdown_options = [
@@ -119,8 +117,9 @@ def get_commodities_subgroup_opts(report):
 
     return dropdown_options
 
-
 def get_market_opts(report, selected_commodity=None):
+    """Retrieve and format unique market options for a specific report and optional selected commodity."""
+    # Create query condition if a specific commodity is selected
     query_and_where = (
         f"and commodity_subgroup_name = '{selected_commodity}'"
         if selected_commodity
@@ -136,6 +135,7 @@ def get_market_opts(report, selected_commodity=None):
         """
         unique_commodities_df = pd.read_sql_query(query_unique_commodities, conn)
 
+    # Remove duplicate entries based on CFTC contract market code
     unique_commodities_df.drop_duplicates(
         subset="cftc_contract_market_code", inplace=True
     )
@@ -158,8 +158,8 @@ def get_market_opts(report, selected_commodity=None):
 
     return dropdown_options
 
-
 def get_slider_range_dates(selected_cftc_code, report):
+    """Retrieve the range of dates for the slider based on a selected CFTC code and report."""
     cftc_code = json.loads(selected_cftc_code)["cftc_code"]
     conn = sqlite3.connect("data.db")
     query_min_max_dates = f"SELECT MIN(report_date_as_yyyy_mm_dd) as min_date, MAX(report_date_as_yyyy_mm_dd) as max_date FROM {report} where cftc_contract_market_code = '{cftc_code}' "
@@ -176,10 +176,10 @@ def get_slider_range_dates(selected_cftc_code, report):
         # Handle the case where no data was found, e.g., by returning some default values.
     return min_date, max_date
 
-
 def get_slider_opts(selected_cftc_code, report):
+    """Generate slider options based on the range of dates for a selected CFTC code and report."""
     min_date, max_date = get_slider_range_dates(selected_cftc_code, report)
-    # we maake mark step 2 if min_date - max_date < 6
+    # Determine the step for the slider marks based on the range
     if (max_date - min_date) < 6:
         marks_step = 1
     else:

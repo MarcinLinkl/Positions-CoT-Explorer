@@ -13,18 +13,18 @@ from fetch_data import fetch_all_reports
 yahoo_tickers = load_yahoo_tk_data()
 
 # Create a Dash web application instance
-
-
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SUPERHERO])
 
+# Check if the database exists
 if os.path.exists("data.db"):
     print("Checking for new reports...")
+    # If the database exists, check for any new records
     check_for_new_records()
 else:
     print("Database does not exist.")
     print("Creating database.")
+    # If the database does not exist, fetch all reports to create the database
     fetch_all_reports()
-
 
 app.title = "Positions Explorer"
 
@@ -33,23 +33,23 @@ app.layout = dbc.Container(
     [
         dbc.Row(
             [
+                # Dropdown for selecting CFTC report
                 dbc.Col(
                     [
                         dbc.Label("Select CFTC report:"),
                         dcc.Dropdown(
                             id="report-dropdown",
-                            options=get_reports_opts(),
-                            value="report_legacy_futures_only",
+                            options=get_reports_opts(),  # Populate with options from get_reports_opts
+                            value="report_legacy_futures_only",  # Default value
                             placeholder="Select a report",
                             optionHeight=50,
                             className="dash-dropdown",
-                            style={
-                                "borderRadius": "15px",
-                            },
+                            style={"borderRadius": "15px"},
                         ),
                     ],
                     className="col-lg-6 col-12 my-2 text-center",
                 ),
+                # Dropdown for selecting commodity subgroup
                 dbc.Col(
                     [
                         dbc.Label("Select a commodity subgroup:"),
@@ -63,11 +63,10 @@ app.layout = dbc.Container(
                     ],
                     className="col-lg-6 col-12 my-2 text-center",
                 ),
+                # Dropdown for selecting market and exchange names
                 dbc.Col(
                     [
-                        dbc.Label(
-                            "Select a specific commodity market/commodity exchange name: "
-                        ),
+                        dbc.Label("Select a specific commodity market/commodity exchange name: "),
                         dcc.Dropdown(
                             id="market-and-exchange-names-dropdown",
                             placeholder="Select a market/exchange",
@@ -82,6 +81,7 @@ app.layout = dbc.Container(
         ),
         dbc.Row(
             [
+                # RangeSlider for selecting date range
                 dbc.Col(
                     [
                         dbc.Label("Select min max dates:"),
@@ -98,6 +98,7 @@ app.layout = dbc.Container(
         ),
         dbc.Row(
             [
+                # Dropdown for selecting price chart
                 dbc.Col(
                     [
                         dbc.Label("Select a price chart: ", id="price-chart-label"),
@@ -115,6 +116,7 @@ app.layout = dbc.Container(
                     ],
                     className="col-lg-6 col-12 my-2 text-center",
                 ),
+                # Dropdown for selecting position types
                 dbc.Col(
                     [
                         dbc.Label("Position types : "),
@@ -123,10 +125,7 @@ app.layout = dbc.Container(
                             multi=True,
                             placeholder="Select a position type",
                             className="dash-bootstrap",
-                            style={
-                                "borderRadius": "15px",
-                                # "text-align": "left"
-                            },
+                            style={"borderRadius": "15px"},
                         ),
                     ],
                     className="col-lg-6 col-12 my-2 text-center",
@@ -135,14 +134,12 @@ app.layout = dbc.Container(
         ),
         dbc.Row(
             [
+                # Checklists and buttons for additional chart options
                 dbc.Col(
                     dbc.Checklist(
                         id="display-chart",
                         options=[
-                            {
-                                "label": "Display additional price",
-                                "value": True,
-                            },
+                            {"label": "Display additional price", "value": True},
                         ],
                         value=[True],
                         inline=True,
@@ -161,10 +158,7 @@ app.layout = dbc.Container(
                     dbc.Checklist(
                         id="add-price-line",
                         options=[
-                            {
-                                "label": "Add price line",
-                                "value": True,
-                            },
+                            {"label": "Add price line", "value": True},
                         ],
                         value=False,
                         inline=True,
@@ -179,6 +173,7 @@ app.layout = dbc.Container(
                     ),
                     className="col-lg-2 col-6 my-2",
                 ),
+                # Buttons to show or hide correlation card
                 dbc.Col(
                     dbc.Button(
                         "Show correlations",
@@ -213,6 +208,7 @@ app.layout = dbc.Container(
                     ),
                     className="col-lg-2 col-3 my-2 text-center",
                 ),
+                # Checklist to show different options
                 dbc.Col(
                     dbc.Checklist(
                         id="show-option",
@@ -236,6 +232,7 @@ app.layout = dbc.Container(
         ),
         dbc.Row(
             [
+                # Display for correlation card and graphs
                 dbc.Col(
                     dbc.Card(
                         [html.Div(id="correlation-card", style={"display": "none"})],
@@ -270,7 +267,6 @@ app.layout = dbc.Container(
     fluid=True,
 )
 
-
 # Callback to update commodities dropdown options based on the selected report
 @app.callback(
     Output("commodities-subgroup-dropdown", "options"),
@@ -280,7 +276,6 @@ def update_commodities_dropdown(report):
     if report is None:
         return []
     return get_commodities_subgroup_opts(report)
-
 
 # Callback to update market dropdown options based on selected commodity and report
 @app.callback(
@@ -295,7 +290,6 @@ def update_market_dropdown(selected_commodity_subgroup, selected_report):
         return get_market_opts(selected_report, selected_commodity_subgroup)
     else:
         return [], []
-
 
 # Callback to update various components including price chart label, slider, and more
 @app.callback(
@@ -323,7 +317,6 @@ def update_year_slider_and_price_dropdown_value(selected, report):
     min_y, max_y, values, marks = get_slider_opts(selected, report)
     return price_chart_label, ticker_dropdown, min_y, max_y, values, marks
 
-
 # Callback to update position types based on the selected report
 @app.callback(
     Output("position-type", "options"),
@@ -340,7 +333,6 @@ def update_position_types(report):
 
     return options, [default_value]
 
-
 # Callback to toggle the visibility of the price graph based on user input
 @app.callback(
     Output("price-graph", "style"),
@@ -348,7 +340,6 @@ def update_position_types(report):
 )
 def toggle_price_graph_visibility(chart_together_value):
     return {"display": "none"} if chart_together_value != [True] else {}
-
 
 # Callback to toggle the correlation card's visibility
 @app.callback(
@@ -369,7 +360,6 @@ def toggle_correlation_card(show_clicks, hide_clicks):
         return {"display": "none"}
     else:
         return dash.no_update
-
 
 # Callback to update various graphs based on user input
 @app.callback(
@@ -400,7 +390,6 @@ def update_graphs_callback(
         ticker,
         add_price,
     )
-
 
 # Main entry point of the application
 if __name__ == "__main__":
