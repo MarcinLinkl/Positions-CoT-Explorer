@@ -13,42 +13,85 @@ def load_yahoo_tk_data():
     return bidict(yahoo_tk_data)
 
 
+import sqlite3
+import datetime
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
 def check_for_new_records():
+    # Get the current date
     current_date = datetime.date.today()
     check_latest_weeks_table = []
-    print("Current week:", current_date.strftime("%Y Week %W"))
+    logging.debug("Current date: %s", current_date.strftime("%Y-%m-%d"))
+    logging.debug("Current week: %s", current_date.strftime("%Y Week %W"))
+
     try:
+        # Connect to the SQLite database
         with sqlite3.connect("data.db") as conn:
             cursor = conn.cursor()
-            query = "SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'report_%'"
+            
+            # Query to get all table names that start with 'report_'
+            query = "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'report_%'"
             cursor.execute(query)
             tables = cursor.fetchall()
+            logging.debug("Tables found: %s", tables)
+            
+            # Iterate over each table
             for table in tables:
                 table_name = table[0]
+                logging.debug("Processing table: %s", table_name)
+                
+                # Query to get the maximum report week and date from the table
                 query_max_week = f"SELECT MAX(yyyy_report_week_ww) as week_report, MAX(report_date_as_yyyy_mm_dd) as report_date FROM {table_name}"
                 cursor.execute(query_max_week)
-                latest_week, latest_report_date = cursor.fetchone()
-                if latest_report_date:
-                    latest_report_date = datetime.datetime.strptime(
-                        latest_report_date, "%Y-%m-%dT%H:%M:%S.%f"
-                    ).date()
-                    days_diff = (current_date - latest_report_date).days
-                    if days_diff >= 10:
-                        print(
-                            f"{table_name.replace('_', ' ').title()}, latest Week: {latest_week}. Checked for new one."
-                        )
-                        check_latest_weeks_table.append((table_name, latest_week))
-                    else:
-                        print(
-                            f"{table_name.replace('_', ' ').title()}, latest Week: {latest_week}."
-                        )
+                result = cursor.fetchone()
+                logging.debug("Query result for table %s: %s", table_name, result)
+                
+                if result:
+                    latest_week, latest_report_date = result
+                    if latest_report_date:
+                        try:
+                            # Convert the report date from string to date object
+                            latest_report_date = datetime.datetime.strptime(
+                                latest_report_date, "%Y-%m-%dT%H:%M:%S.%f"
+                            ).date()
+                            logging.debug("Parsed date for table %s: %s", table_name, latest_report_date)
+                        except ValueError:
+                            # Handle the case where the date format is incorrect
+                            logging.error("Date format error for table %s: %s", table_name, latest_report_date)
+                            continue
+                        
+                        # Calculate the difference in days between the current date and the latest report date
+                        days_diff = (current_date - latest_report_date).days
+                        logging.debug("Days difference for table %s: %d", table_name, days_diff)
+                        
+                        if days_diff >= 10:
+                            # If the difference is 10 days or more, add the table to the list for further checking
+                            logging.info(
+                                "Table %s, latest Week: %s. Data is older than 10 days. Check for new one.",
+                                table_name.replace('_', ' ').title(), latest_week
+                            )
+                            check_latest_weeks_table.append((table_name, latest_week))
+                        else:
+                            # Print the table name and the latest week if the data is not yet outdated
+                            logging.info(
+                                "Table %s, latest Week: %s. Data is up to date.",
+                                table_name.replace('_', ' ').title(), latest_week
+                            )
     except sqlite3.Error as e:
-        print("Error when checking for new reports:", e)
+        # Log any SQLite errors encountered
+        logging.error("Error when checking for new reports: %s", e)
         return None
+    
+    # If there are tables with outdated data, call fetch_new_all with the list of tables
     if check_latest_weeks_table:
+        logging.info("Tables with outdated data: %s", check_latest_weeks_table)
         fetch_new_all(check_latest_weeks_table)
     else:
-        print("Data up to date.")
+        logging.info("Data up to date.")
+
 
 
 def get_reports_opts():

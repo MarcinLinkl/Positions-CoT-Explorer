@@ -73,11 +73,12 @@ def fetch_all_reports():
 
 
 def fetch_new_all(reports_list):
+    # Convert single tuple to list if necessary
     if isinstance(reports_list, tuple):
         reports_list = [reports_list]
+
     for report in reports_list:
         fetch_new_report(report)
-
 
 def fetch_new_report(report_table_name_and_week):
     report_table_name = report_table_name_and_week[0]
@@ -85,29 +86,34 @@ def fetch_new_report(report_table_name_and_week):
     report_root_name = report_table_name.split("_")[1]
 
     # Create a comma-separated list of selected columns for the API query
-    selected_columns = ",".join(main_api_cols + report_api_cols[report_root_name])
+    selected_columns = ",".join(main_api_cols + report_api_cols.get(report_root_name, []))
 
     data_records = get_socrata_api_data(
         REPORTS_TABLE[report_table_name], selected_columns, report_last_week
     )
+    
     if data_records is not None and not data_records.empty:
         print("New data found...")
         print(f"Number of records fetched: {data_records.shape[0]}")
+
         with sqlite3.connect("data.db") as db_connection:
             # Create the 'cftc_codes' table if it doesn't exist
             cursor = db_connection.cursor()
             cursor.execute(
-                f"""
-                select cftc_contract_market_code from cftc_codes where {report_table_name}=1   
-            """
+                f"SELECT cftc_contract_market_code FROM cftc_codes WHERE {report_table_name}=1"
             )
-            codes_CFTC = cursor.fetchall()[0]
-
-        # filtering data_records based on the condition
+            codes_CFTC = cursor.fetchall()
+            
+            if codes_CFTC:
+                codes_CFTC = [code[0] for code in codes_CFTC]
+            else:
+                print("No CFTC codes found for filtering.")
+                return
+        
+        # Filtering data_records based on the condition
         data_records = data_records[
             data_records["cftc_contract_market_code"].isin(codes_CFTC)
         ]
-        # Print the number of records prepared to save in db
         print(f"Number of records to be saved: {data_records.shape[0]}")
 
         # Convert column names to lowercase, remove the "_all" suffix, and replace "__" with "_"
@@ -116,36 +122,38 @@ def fetch_new_report(report_table_name_and_week):
             for col in data_records.columns
         ]
 
-        # Delete 'market_and_exchange_names' and 'commodity' columns (only 'cftc_codes' will be used)
-        data_records.drop(
-            [
-                "market_and_exchange_names",
-                "commodity",
-                "commodity_subgroup_name",
-                "contract_units",
-            ],
+        # Remove columns if they exist
+        columns_to_remove = [
+            "market_and_exchange_names",
+            "commodity",
+            "commodity_subgroup_name",
+            "contract_units",
+        ]
+        data_records = data_records.drop(
+            [col for col in columns_to_remove if col in data_records.columns], 
             axis=1,
-            inplace=True,
+            errors='ignore'
         )
 
-        # change to numeric data values for saving properly types
+        # Convert columns to numeric data types
         df_1 = data_records.iloc[:, :3]
         df_2 = data_records.iloc[:, 3:].apply(pd.to_numeric, errors="coerce")
         data_records = pd.concat([df_1, df_2], axis=1)
 
-        # calc net positions
-        for root in root_cols[report_root_name]:
+        # Calculate net positions
+        for root in root_cols.get(report_root_name, []):
             print("Calculating net data for: " + root)
             long_col = f"{root}_long"
             short_col = f"{root}_short"
-            data_records[f"{root}_net"] = data_records[long_col].sub(
-                data_records[short_col]
-            )
-
+            if long_col in data_records.columns and short_col in data_records.columns:
+                data_records[f"{root}_net"] = data_records[long_col].sub(
+                    data_records[short_col]
+                )
+        
         # Replace NaN values with None
         data_records = data_records.where(pd.notna(data_records), None)
 
-        # Save data to the 'data.db' database else rise exception
+        # Save data to the database
         with sqlite3.connect("data.db") as db_connection:
             try:
                 data_records.to_sql(
@@ -157,7 +165,6 @@ def fetch_new_report(report_table_name_and_week):
                 print(
                     f"Data successfully saved to the table '{report_table_name}' in the database."
                 )
-
             except Exception as e:
                 print(
                     f"Failed to save data to the table '{report_table_name}' in the database. Error: {str(e)}"
