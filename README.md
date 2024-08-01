@@ -25,6 +25,8 @@
   - [Understanding CFTC and CoT Reports](#understanding-cftc-and-cot-reports)
   - [Trading Position Reports](#trading-position-reports)
   - [Use Cases](#use-cases)
+  - [Running App](#running-app)
+
 - [Tech Stack](#tech-stack)
 
 ## About the Project
@@ -112,6 +114,33 @@ Trading position reports serve various purposes in financial and commodities mar
 4. **Market Analysis:** Reports are valuable for comprehensive market analysis. Studying positions by different trader types provides insights into market participants' behaviors and expectations.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+### Running App
+
+To run the Positions CoT Explorer locally, follow these steps:
+
+Clone the Repository
+```
+git clone https://github.com/MarcinLinkl/Positions-CoT-Explorer
+cd Positions-CoT-Explorer
+```
+Create a Virtual Environment (Recommended)
+```
+python -m venv venv
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+```
+Install Dependencies
+
+```
+pip install -r requirements.txt
+```
+Run the Application
+```
+py dashboard.py
+```
+By default, the application will be accessible at http://127.0.0.1:2077 in your web browser. You can change port if needed ;)
+
 
 ## Tech Stack
 
