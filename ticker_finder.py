@@ -11,13 +11,17 @@ def similarity_score(s1, s2):
 
 def find_similar_ticker(commodity_selected, data_tickers):
     commodity_selected = (
-        commodity_selected.split(" - ")[0]
+        commodity_selected.lower().split(" - ")[0]
         .replace("index", "")
         .replace("futures", "")
         .replace("-", " ")
         .replace("ultra","")
+        .replace("micro","")
+        .replace("mini","")
     )
+    print(commodity_selected)
     commodity_selected = " ".join(commodity_selected.split()[:3])
+    print(commodity_selected)
     best_match = None
     best_score = 0.0
 

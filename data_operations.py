@@ -39,7 +39,6 @@ def get_data(report_type, cftc_code, years):
         + [f"{item}_long" for item in roots]
         + [f"{item}_short" for item in roots]
     )
-    
     # Connect to the database
     conn = sqlite3.connect("data.db")
     column_str = ", ".join(list(cols))
@@ -58,15 +57,15 @@ def get_data(report_type, cftc_code, years):
     df_data.set_index("Date", inplace=True)
     df_data.index = pd.to_datetime(df_data.index)
     conn.close()
-    
     return df_data
 
 # Function to retrieve price data from Yahoo Finance
 def get_price_data(ticker, year):
     start_date = f"{year[0]}-01-01" if year != [0, 0] else None
     end_date = f"{year[1]}-12-31" if year != [0, 0] else None
-    # Download price data
-    return yf.download(ticker, start_date, end_date, "1wk")["Close"].to_frame()
+    df = yf.download(ticker, start_date, end_date, "1wk")[['Close']]
+    df.columns = ['Close']
+    return df
 
 # Function to create a figure for graphs based on data
 def create_figure(df, name, columns_selected=False, price_chart=True, price_name=""):
@@ -170,11 +169,11 @@ def make_graphs_and_cards(
         
         # If market commodity is selected and ticker is provided, concatenate the data
         if cftc_code_and_market_commodity:
-            df_price_weekly = df_price.resample("W").mean()
+            # df_price_weekly = df_price.resample("W").mean()
             # Concatenate price data with market positions data
-            df_positions = pd.concat([df_price_weekly, df_positions], axis=1).fillna(method="ffill")
+            df_positions = pd.concat([df_price, df_positions], axis=1).ffill()
             # Concatenate price data with market percentages data
-            df_percentages = pd.concat([df_price_weekly, df_percentages], axis=1).fillna(method="ffill")
+            df_percentages = pd.concat([df_price, df_percentages], axis=1).ffill()
             
             # Calculate correlations for positions and percentages
             correlations_positions = df_positions.corr()["Close"].drop("Close")
@@ -192,9 +191,7 @@ def make_graphs_and_cards(
     # If market commodity and positions are selected, process and create figures
     if cftc_code_and_market_commodity and positions and options:
         percentage_cols, positions_cols = [], []
-        percentage_cols = [
-            "pct_of_oi_" + x + "_" + y for x in positions for y in options
-        ]
+        percentage_cols = ["pct_of_oi_" + x + "_" + y for x in positions for y in options]
         market_commodity = cftc_code_market_name["name_market"]
         positions_cols = [x + "_positions_" + y for x in positions for y in options]
         unit_name = cftc_code_market_name["units"]
@@ -222,7 +219,10 @@ def make_graphs_and_cards(
                 False,
             )
             fig_percentages = create_figure(
-                df_percentages, market_commodity, percentage_cols, False
+                df_percentages,
+                market_commodity,
+                percentage_cols,
+                False
             )
     
     # Generate the formatted correlation text and return the figures
