@@ -17,7 +17,7 @@ def find_similar_ticker(commodity_selected, data_tickers):
     # print("\033[92m", "Data tickers: ", data_tickers, "\033[0m")
 
     commodity_selected = (
-        commodity_selected.split(" - ")[0]
+        commodity_selected.lower().split(" - ")[0]
         .replace("index", "")
         .replace("futures", "")
         .replace("-", " ")
