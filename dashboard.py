@@ -1,39 +1,49 @@
 import os
+import json
 import dash
+import dash_bootstrap_components as dbc
 from dash import dcc, html
 from dash.dependencies import Input, Output
-import dash_bootstrap_components as dbc
+
+# Local imports
 from data_operations import *
 from reports_cols import root_cols_desc
 from ticker_finder import find_similar_ticker
 from utils import *
 from fetch_data import fetch_all_reports
 
-# Load ticker data from Yahoo Finance
-yahoo_tickers = load_yahoo_tk_data()
+# Load ticker data from json file for loading yfinance data
 
-# Create a Dash web application instance
+with open("yahoo_tk_futures.json") as f:
+    tickers_dict = json.load(f)
+
+price_tickers_labels_dropdown = [{"label": f"{j.upper()}", "value": i } for i, j in tickers_dict.items()]
+
+
+# Here we load the tickers and making labels for dropdown menu - with dumped dict to string as a values ( with json.dumps)
+# It's important to use json.dumps() to convert the dictionary to a JSON string before passing it to the dropdown options.
+# This ensures that the data is in a format that Dash can handle without issues, - it can't handle dicts directly.
+# Dash uses JSON to serialize data for transmission between the server and client.
+# Later, when you need to use the data, you can convert it back from JSON string to a dictionary using json.loads()
+
+
+# Initialize Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SUPERHERO])
+app.title = "Positions Explorer"
 
-# Check if the database exists
+# Database check and initialization
 if os.path.exists("data.db"):
     print("Checking for new reports...")
-    # If the database exists, check for any new records
     check_for_new_records()
 else:
-    print("Database does not exist.")
-    print("Creating database.")
-    # If the database does not exist, fetch all reports to create the database
+    print("Database does not exist. Creating database.")
     fetch_all_reports()
-
-app.title = "Positions Explorer"
 
 # Define the layout of the web application
 app.layout = dbc.Container(
     [
         dbc.Row(
             [
-                # Dropdown for selecting CFTC report
                 dbc.Col(
                     [
                         dbc.Label("Select CFTC report:"),
@@ -45,11 +55,11 @@ app.layout = dbc.Container(
                             optionHeight=50,
                             className="dash-dropdown",
                             style={"borderRadius": "15px"},
+                            
                         ),
                     ],
                     className="col-lg-6 col-12 my-2 text-center",
                 ),
-                # Dropdown for selecting commodity subgroup
                 dbc.Col(
                     [
                         dbc.Label("Select a commodity subgroup:"),
@@ -59,11 +69,11 @@ app.layout = dbc.Container(
                             optionHeight=50,
                             className="dash-dropdown",
                             style={"borderRadius": "15px"},
+                            
                         ),
                     ],
                     className="col-lg-6 col-12 my-2 text-center",
                 ),
-                # Dropdown for selecting market and exchange names
                 dbc.Col(
                     [
                         dbc.Label("Select a specific commodity market/commodity exchange name: "),
@@ -81,12 +91,11 @@ app.layout = dbc.Container(
         ),
         dbc.Row(
             [
-                # RangeSlider for selecting date range
                 dbc.Col(
                     [
                         dbc.Label("Select min max dates:"),
                         dcc.RangeSlider(
-                            id="year-slider",
+                            id="years-slider",
                             step=1,
                             className="col-12 px-10 custom-range-slider",
                         ),
@@ -98,32 +107,28 @@ app.layout = dbc.Container(
         ),
         dbc.Row(
             [
-                # Dropdown for selecting price chart
                 dbc.Col(
                     [
                         dbc.Label("Select a price chart: ", id="price-chart-label"),
                         dcc.Dropdown(
                             id="chart-price-dropdown",
-                            options=[
-                                {"label": f"Price of {j.upper()}", "value": i}
-                                for i, j in yahoo_tickers.items()
-                            ],
+                            options=price_tickers_labels_dropdown,
                             placeholder="Select price",
                             optionHeight=50,
+                            value="^SP500-30",
                             className="dash-bootstrap",
                             style={"borderRadius": "15px"},
                         ),
                     ],
                     className="col-lg-6 col-12 my-2 text-center",
                 ),
-                # Dropdown for selecting position types
                 dbc.Col(
                     [
                         dbc.Label("Position types : "),
                         dcc.Dropdown(
-                            id="position-type",
+                            id="positions-types",
                             multi=True,
-                            placeholder="Select a position type",
+                            placeholder="Select a positions types",
                             className="dash-bootstrap",
                             style={"borderRadius": "15px"},
                         ),
@@ -134,21 +139,12 @@ app.layout = dbc.Container(
         ),
         dbc.Row(
             [
-                # Checklists and buttons for additional chart options
                 dbc.Col(
                     dbc.Checklist(
                         id="display-chart",
-                        options=[
-                            {"label": "Display additional price", "value": True},
-                        ],
+                        options=[{"label": "Display additional price", "value": True}],
                         value=[True],
                         inline=True,
-                        labelStyle={
-                            "display": "inline-block",
-                            "margin": "0 0 0 15px",
-                            "text-align": "center",
-                            "font-size": "18px",
-                        },
                         switch=True,
                         className="text-center",
                     ),
@@ -157,37 +153,21 @@ app.layout = dbc.Container(
                 dbc.Col(
                     dbc.Checklist(
                         id="add-price-line",
-                        options=[
-                            {"label": "Add price line", "value": True},
-                        ],
+                        options=[{"label": "Add price line", "value": True}],
                         value=False,
                         inline=True,
-                        labelStyle={
-                            "display": "inline-block",
-                            "margin": "0 0 0 15px",
-                            "text-align": "center",
-                            "font-size": "18px",
-                        },
                         switch=True,
                         className="text-center",
+                        
                     ),
                     className="col-lg-2 col-6 my-2",
                 ),
-                # Buttons to show or hide correlation card
                 dbc.Col(
                     dbc.Button(
                         "Show correlations",
                         id="show-corr",
                         color="success",
-                        style={
-                            "display": "inline-block",
-                            "max-height": "30px",
-                            "border-radius": "15px",
-                            "text-align": "center",
-                            "margin": "0",
-                            "padding": "0",
-                            "width": "calc(90%)",
-                        },
+                       
                     ),
                     className="col-lg-2 col-3 my-2 text-center",
                 ),
@@ -196,34 +176,15 @@ app.layout = dbc.Container(
                         "Hide correlations",
                         id="hide-corr",
                         color="success",
-                        style={
-                            "display": "inline-block",
-                            "max-height": "30px",
-                            "border-radius": "15px",
-                            "text-align": "center",
-                            "margin": "0",
-                            "padding": "0",
-                            "width": "calc(90%)",
-                        },
                     ),
                     className="col-lg-2 col-3 my-2 text-center",
                 ),
-                # Checklist to show different options
                 dbc.Col(
                     dbc.Checklist(
-                        id="show-option",
-                        options=[
-                            {"label": i.capitalize(), "value": i}
-                            for i in ["net", "long", "short"]
-                        ],
+                        id="show-options",
+                        options=[{"label": i.capitalize(), "value": i} for i in ["net", "long", "short"]],
                         value=["net"],
                         inline=True,
-                        labelStyle={
-                            "display": "inline-block",
-                            "margin": "0 0 0 15px",
-                            "font-weight": "bold",
-                            "font-size": "18px",
-                        },
                         className="text-center",
                     ),
                     className="col-lg-3 col-6 my-2",
@@ -232,42 +193,19 @@ app.layout = dbc.Container(
         ),
         dbc.Row(
             [
-                # Display for correlation card and graphs
-                dbc.Col(
-                    dbc.Card(
-                        [html.Div(id="correlation-card", style={"display": "none"})],
-                    ),
-                    className="col-12 my-2 mx-auto text-center",
-                ),
-                dbc.Col(
-                    dcc.Graph(
-                        id="price-graph",
-                        className="col-12 my-2",
-                    ),
-                    className="col-12",
-                ),
-                dbc.Col(
-                    dcc.Graph(
-                        id="positions-graph",
-                        className="col-12 my-2",
-                    ),
-                    className="col-12",
-                ),
-                dbc.Col(
-                    dcc.Graph(
-                        id="percentage-graph",
-                        className="col-12 my-2",
-                    ),
-                    className="col-12",
-                ),
+                dbc.Col(dbc.Card([html.Div(id="correlation-card", style={"display": "none"})]),
+                    className="col-12 my-2 mx-auto text-center"),
+                dbc.Col(dcc.Graph(id="price-graph"), className="col-12 my-2"),
+                dbc.Col(dcc.Graph(id="positions-graph"), className="col-12 my-2"),
+                dbc.Col(dcc.Graph(id="percentage-graph"), className="col-12 my-2"),
             ],
             className="p-2",
         ),
     ],
-    fluid=True,
+    fluid=True
 )
 
-# Callback to update commodities dropdown options based on the selected report
+# Callbacks to update components dynamically
 @app.callback(
     Output("commodities-subgroup-dropdown", "options"),
     Input("report-dropdown", "value"),
@@ -277,7 +215,6 @@ def update_commodities_dropdown(report):
         return []
     return get_commodities_subgroup_opts(report)
 
-# Callback to update market dropdown options based on selected commodity and report
 @app.callback(
     Output("market-and-exchange-names-dropdown", "options"),
     Input("commodities-subgroup-dropdown", "value"),
@@ -291,36 +228,39 @@ def update_market_dropdown(selected_commodity_subgroup, selected_report):
     else:
         return [], []
 
-# Callback to update various components including price chart label, slider, and more
 @app.callback(
     Output("price-chart-label", "children"),
     Output("chart-price-dropdown", "value"),
-    Output("year-slider", "min"),
-    Output("year-slider", "max"),
-    Output("year-slider", "value"),
-    Output("year-slider", "marks"),
+    Output("years-slider", "min"),
+    Output("years-slider", "max"),
+    Output("years-slider", "value"),
+    Output("years-slider", "marks"),
     Input("market-and-exchange-names-dropdown", "value"),
     Input("report-dropdown", "value"),
 )
 def update_year_slider_and_price_dropdown_value(selected, report):
     if selected is None or report is None:
         return "Select a price chart:", None, 0, 0, [0, 0], {}
+    
+    selected = json.loads(selected)
+    name_market = selected["name_market"]
+  
+    ticker_dropdown = find_similar_ticker(name_market, tickers_dict)
+    # print in red 
+    # print(f"\033[31mticker_dropdown: {ticker_dropdown}\033[0m")
 
-    name_market = json.loads(selected)["name_market"]
-    ticker_dropdown = find_similar_ticker(name_market, yahoo_tickers)
     price_chart_label = (
-        "Price chart not found; may need to select one manually:"
-        if ticker_dropdown is None
+        "Price chart not found; may need to select one manually:" if ticker_dropdown is None
         else f"Price chart found: {ticker_dropdown}, you can adjust manually if needed"
     )
+    
 
-    min_y, max_y, values, marks = get_slider_opts(selected, report)
+    min_y, max_y, values, marks = get_slider_opts(selected["cftc_code"], report)
     return price_chart_label, ticker_dropdown, min_y, max_y, values, marks
 
-# Callback to update position types based on the selected report
 @app.callback(
-    Output("position-type", "options"),
-    Output("position-type", "value"),
+    Output("positions-types", "options"),
+    Output("positions-types", "value"),
     Input("report-dropdown", "value"),
 )
 def update_position_types(report):
@@ -330,9 +270,7 @@ def update_position_types(report):
     categories = root_cols_desc.get(selected_report, {})
     options = [{"label": label, "value": value} for value, label in categories.items()]
     default_value = options[1]["value"] if options else None
-
     return options, [default_value]
-
 # Callback to toggle the visibility of the price graph based on user input
 @app.callback(
     Output("price-graph", "style"),
@@ -360,7 +298,6 @@ def toggle_correlation_card(show_clicks, hide_clicks):
         return {"display": "none"}
     else:
         return dash.no_update
-
 # Callback to update various graphs based on user input
 @app.callback(
     Output("price-graph", "figure"),
@@ -369,28 +306,33 @@ def toggle_correlation_card(show_clicks, hide_clicks):
     Output("percentage-graph", "figure"),
     Input("report-dropdown", "value"),
     Input("market-and-exchange-names-dropdown", "value"),
-    Input("position-type", "value"),
-    Input("year-slider", "value"),
-    Input("show-option", "value"),
+    Input("positions-types", "value"),
+    Input("years-slider", "value"),
+    Input("show-options", "value"),
     Input("chart-price-dropdown", "value"),
     Input("add-price-line", "value"),
 )
 def update_graphs_callback(
-    report_type, market_commodity, positions, years, options, ticker, add_price
-):
-    if report_type is None or market_commodity is None:
-        return dash.no_update, dash.no_update, dash.no_update, dash.no_update
-    return make_graphs_and_cards(
-        yahoo_tickers,
-        report_type,
-        market_commodity,
-        positions,
-        years,
-        options,
-        ticker,
-        add_price,
-    )
+    report_type, market_commodity_str, positions, years, options, ticker, include_price):
 
-# Main entry point of the application
+    if market_commodity_str is not None:
+        print(f"market_commodity_str: {market_commodity_str}")
+        market_commodity = json.loads(market_commodity_str)
+
+    # print("market_commodity: ", market_commodity)
+    ticker_name = tickers_dict.get(ticker, None)
+
+    if market_commodity_str is None:
+        if ticker:
+            print(" We are going to show the price graph only")
+            return make_only_price_graph(ticker,ticker_name), dash.no_update, dash.no_update, dash.no_update
+        
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+    return make_graphs_and_cards(report_type, market_commodity, positions, years, options, ticker,ticker_name, include_price)
+
+
+
+
+# Run the app
 if __name__ == "__main__":
     app.run(debug=False, port=2077)

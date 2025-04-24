@@ -1,8 +1,37 @@
-/* Dla kolumn zawierających Dropdowny */
+
+/* some style writen in dashboard.py like style={"borderRadius": "15px"},
+can not be applied in the css file, because bootstrap theme have overwritten the style
+*/
+
 .dash-dropdown {
     text-shadow: 4px 4px 4px #afafaffe;
     color: green;
     font-weight: bold;
+   
+}
+
+#show-options {
+    display: inline-block;
+    margin: 0 0 0 15px;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+#add-price-line,#display-chart {
+    display: inline-block;
+    margin: 0 0 0 15px;
+    text-align: center;
+    font-size: 18px;
+}
+    
+#show-corr, #hide-corr {
+    display: inline-block;
+    max-height: 30px;
+    border-radius: 15px;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    width: calc(90%);
 }
 
 h4 {

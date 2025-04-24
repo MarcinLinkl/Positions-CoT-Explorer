@@ -2,19 +2,12 @@ import datetime
 import pandas as pd
 import sqlite3
 import json
-from bidict import bidict
-import json
+
+import logging
 from fetch_data import fetch_new_all
 
-def load_yahoo_tk_data():
-    """Load Yahoo Tk Futures data from a JSON file and return it as a bidirectional dictionary."""
-    with open("yahoo_tk_futures.json") as f:
-        yahoo_tk_data = json.load(f)
-    return bidict(yahoo_tk_data)
 
-import sqlite3
-import datetime
-import logging
+
 
 # Configure logging to display debug information
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -101,6 +94,7 @@ def get_reports_opts():
     # Format table names to be more readable
     labels = [name.replace("report_", "").replace("_", " ").title() for name in tables]
     values = [name for name in tables]
+    print(labels, values)
 
     return [{"label": label, "value": value} for label, value in zip(labels, values)]
 
@@ -116,6 +110,16 @@ def get_commodities_subgroup_opts(report):
     ]
 
     return dropdown_options
+
+
+# Values need to be converted to JSON format for Dash to work properly 
+# Dash uses JSON to serialize data for transmission between the server and client.
+# This is especially important for complex data types like dictionaries or lists.
+# If you pass a dictionary directly, it may not be serialized correctly, leading to errors.
+# By converting the dictionary to a JSON string, you ensure that it can be properly serialized and deserialized by Dash.
+# This is why we use json.dumps() to convert the dictionary to a JSON string before passing it to the dropdown options.
+# This ensures that the data is in a format that Dash can handle without issues - you will be not see any errors in the console. 
+# Later, when you need to use the data, you can convert it back from JSON string to a dictionary using json.loads()
 
 def get_market_opts(report, selected_commodity=None):
     """Retrieve and format unique market options for a specific report and optional selected commodity."""
@@ -139,30 +143,27 @@ def get_market_opts(report, selected_commodity=None):
     unique_commodities_df.drop_duplicates(
         subset="cftc_contract_market_code", inplace=True
     )
-
     dropdown_options = [
-        {
-            "label": name_market,
-            "value": json.dumps(
-                {
+            {
+                "label": name_market,
+                "value": json.dumps({
                     "cftc_code": cftc_code,
                     "name_market": name_market,
                     "units": contract_units,
-                }
-            ),
-        }
-        for name_market, cftc_code, contract_units in unique_commodities_df[
-            ["market_and_exchange_names", "cftc_contract_market_code", "contract_units"]
-        ].itertuples(index=False)
-    ]
-
+                }),
+            }
+            for name_market, cftc_code, contract_units in unique_commodities_df[
+                ["market_and_exchange_names", "cftc_contract_market_code", "contract_units"]
+            ].itertuples(index=False)
+        ]
+    
     return dropdown_options
 
 def get_slider_range_dates(selected_cftc_code, report):
     """Retrieve the range of dates for the slider based on a selected CFTC code and report."""
-    cftc_code = json.loads(selected_cftc_code)["cftc_code"]
+    
     conn = sqlite3.connect("data.db")
-    query_min_max_dates = f"SELECT MIN(report_date_as_yyyy_mm_dd) as min_date, MAX(report_date_as_yyyy_mm_dd) as max_date FROM {report} where cftc_contract_market_code = '{cftc_code}' "
+    query_min_max_dates = f"SELECT MIN(report_date_as_yyyy_mm_dd) as min_date, MAX(report_date_as_yyyy_mm_dd) as max_date FROM {report} where cftc_contract_market_code = '{selected_cftc_code}' "
     min_max_dates = pd.read_sql(query_min_max_dates, conn)
     min_date = min_max_dates["min_date"].iloc[0]
     max_date = min_max_dates["max_date"].iloc[0]
@@ -186,3 +187,4 @@ def get_slider_opts(selected_cftc_code, report):
         marks_step = 2
     marks = {year: str(year) for year in range(min_date, max_date + 1, marks_step)}
     return min_date, max_date, [min_date, max_date], marks
+

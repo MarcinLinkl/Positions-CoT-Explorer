@@ -10,14 +10,24 @@ def similarity_score(s1, s2):
 
 
 def find_similar_ticker(commodity_selected, data_tickers):
+    # Function to find the most similar ticker to the selected commodity
+    # print that red
+    # print("\033[91m", "Selected commodity: ", commodity_selected, "\033[0m")
+    # print that green
+    # print("\033[92m", "Data tickers: ", data_tickers, "\033[0m")
+
     commodity_selected = (
         commodity_selected.split(" - ")[0]
         .replace("index", "")
         .replace("futures", "")
         .replace("-", " ")
         .replace("ultra","")
-    )
+        .replace("mini","")
+        .replace("micro","")
+        )
+
     commodity_selected = " ".join(commodity_selected.split()[:3])
+
     best_match = None
     best_score = 0.0
 
@@ -28,7 +38,13 @@ def find_similar_ticker(commodity_selected, data_tickers):
             best_score = score
 
     if best_match is not None and best_score >= 0.6:
-        return data_tickers.inverse[best_match]
+        best_match_value = next((k for k, v in data_tickers.items() if v == best_match), None)
+        # print that green
+        # print("\033[92m", "Best match: ", best_match_value, "\033[0m")
+        # print that red
+       
+
+        return  best_match_value
     else:
         # Try to reverse the word order in the user's query and compare again
         reversed_commodity_selected = " ".join(reversed(commodity_selected.split()))
@@ -38,9 +54,12 @@ def find_similar_ticker(commodity_selected, data_tickers):
             else 0.0
         )
         if reversed_score >= 0.6:
-            tk = data_tickers.inverse[best_match]
-            print("Ticker found ", tk)
-            return tk
+            best_match_value = next((k for k, v in data_tickers.items() if v == best_match), None)
+             # print that green
+            # print("\033[92m", "Best match: ", best_match_value, "\033[0m")
+            # print that red
+            # print("\033[91m", "Best match value dict: ", data_tickers[best_match_value], "\033[0m")
+
+            return best_match_value
         else:
-            print("No matching ticker found.")
             return None
