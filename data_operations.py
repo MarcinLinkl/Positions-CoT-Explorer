@@ -28,16 +28,7 @@ def map_column_name(report, column_name):
 # Function to retrieve data from the database based on report type and CFTC code
 def get_data(report_type, cftc_code, years):
     roots = root_cols[report_type.split("_")[1]]
-<<<<<<< HEAD
     cols = [f"{item}_{suffix}" for item in roots for suffix in ["net", "long", "short"]]
-=======
-    cols = (
-        [f"{item}_net" for item in roots]
-        + [f"{item}_long" for item in roots]
-        + [f"{item}_short" for item in roots]
-    )
-    # Connect to the database
->>>>>>> 80e437ee0b37a39b29c088146f650c7b2c13ea0a
     conn = sqlite3.connect("data.db")
     query = f"""
     SELECT report_date_as_yyyy_mm_dd, {', '.join(cols)}
@@ -50,7 +41,6 @@ def get_data(report_type, cftc_code, years):
     df["Date"] = pd.to_datetime(df["Date"])
     df.set_index("Date", inplace=True)
     conn.close()
-<<<<<<< HEAD
     return df
 
 # Function to retrieve price data from Yahoo Finance
@@ -64,17 +54,6 @@ def get_price_data(ticker, years=None):
     except Exception as e:
         print(f"Error fetching price data: {e}")
         return pd.Series()
-=======
-    return df_data
-
-# Function to retrieve price data from Yahoo Finance
-def get_price_data(ticker, year):
-    start_date = f"{year[0]}-01-01" if year != [0, 0] else None
-    end_date = f"{year[1]}-12-31" if year != [0, 0] else None
-    df = yf.download(ticker, start_date, end_date, "1wk")[['Close']]
-    df.columns = ['Close']
-    return df
->>>>>>> 80e437ee0b37a39b29c088146f650c7b2c13ea0a
 
 
 def prepare_chart_data(report_type, cftc_code, years, ticker):
@@ -240,73 +219,11 @@ def make_graphs_and_cards(report_type, market_commodity, selected_positions,year
             correlation_text_percentages,
         )
         
-<<<<<<< HEAD
     else:
         
         card_correlations = []
 
    
-=======
-        # If market commodity is selected and ticker is provided, concatenate the data
-        if cftc_code_and_market_commodity:
-            # df_price_weekly = df_price.resample("W").mean()
-            # Concatenate price data with market positions data
-            df_positions = pd.concat([df_price, df_positions], axis=1).ffill()
-            # Concatenate price data with market percentages data
-            df_percentages = pd.concat([df_price, df_percentages], axis=1).ffill()
-            
-            # Calculate correlations for positions and percentages
-            correlations_positions = df_positions.corr()["Close"].drop("Close")
-            correlation_text_positions = get_correlation_text(report, correlations_positions)
-            correlations_percentage = df_percentages.corr()["Close"].drop("Close")
-            correlation_text_percentage = get_correlation_text(report, correlations_percentage)
-            
-            # Create correlation cards with the correlation information
-            card_correlations = create_correlation_card(
-                price_name,
-                correlation_text_positions,
-                correlation_text_percentage,
-            )
-    
-    # If market commodity and positions are selected, process and create figures
-    if cftc_code_and_market_commodity and positions and options:
-        percentage_cols, positions_cols = [], []
-        percentage_cols = ["pct_of_oi_" + x + "_" + y for x in positions for y in options]
-        market_commodity = cftc_code_market_name["name_market"]
-        positions_cols = [x + "_positions_" + y for x in positions for y in options]
-        unit_name = cftc_code_market_name["units"]
-        
-        if add_price and ticker:
-            fig_positions = create_figure(
-                df_positions,
-                market_commodity + " " + unit_name,
-                positions_cols,
-                True,
-                price_name,
-            )
-            fig_percentages = create_figure(
-                df_percentages,
-                market_commodity,
-                percentage_cols,
-                True,
-                price_name,
-            )
-        else:
-            fig_positions = create_figure(
-                df_positions,
-                market_commodity,
-                positions_cols,
-                False,
-            )
-            fig_percentages = create_figure(
-                df_percentages,
-                market_commodity,
-                percentage_cols,
-                False
-            )
-    
-    # Generate the formatted correlation text and return the figures
->>>>>>> 80e437ee0b37a39b29c088146f650c7b2c13ea0a
     return fig_price, fig_positions, card_correlations, fig_percentages
 
 
