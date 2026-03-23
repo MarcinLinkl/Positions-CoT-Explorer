@@ -185,6 +185,12 @@ def get_slider_opts(selected_cftc_code, report):
         marks_step = 1
     else:
         marks_step = 2
-    marks = {year: str(year) for year in range(min_date, max_date + 1, marks_step)}
+    marks = {
+    year: {
+        "label": str(year), 
+        "style": {"color": "white", "fontSize": "12px"}
+    } 
+        for year in range(min_date, max_date + 1, marks_step)
+    }
     return min_date, max_date, [min_date, max_date], marks
 

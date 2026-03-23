@@ -11,6 +11,7 @@ from reports_cols import root_cols_desc
 from ticker_finder import find_similar_ticker
 from utils import *
 from fetch_data import fetch_all_reports
+from quick_fix_for_nulls import cleanup_commodity_subgroup_nulls
 
 # Load ticker data from json file for loading yfinance data
 
@@ -35,9 +36,11 @@ app.title = "Positions Explorer"
 if os.path.exists("data.db"):
     print("Checking for new reports...")
     check_for_new_records()
+    cleanup_commodity_subgroup_nulls()
 else:
     print("Database does not exist. Creating database.")
     fetch_all_reports()
+    cleanup_commodity_subgroup_nulls()
 
 # Define the layout of the web application
 app.layout = dbc.Container(
