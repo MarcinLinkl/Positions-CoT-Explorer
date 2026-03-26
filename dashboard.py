@@ -100,7 +100,7 @@ app.layout = dbc.Container(
                         dcc.RangeSlider(
                             id="years-slider",
                             step=1,
-                            className="col-12 px-10 custom-range-slider",
+                            className="col-12 px-10 range-slider",
                         ),
                     ],
                     className="px-2 text-center",

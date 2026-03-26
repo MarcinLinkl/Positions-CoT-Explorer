@@ -2,7 +2,10 @@
 /* some style writen in dashboard.py like style={"borderRadius": "15px"},
 can not be applied in the css file, because bootstrap theme have overwritten the style
 */
-
+.range-slider {
+    color: #000000 !important;
+    /* opacity: 1 !important;  */
+}
 .dash-dropdown {
     text-shadow: 4px 4px 4px #afafaffe;
     color: green;
