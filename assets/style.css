@@ -18,9 +18,11 @@ can not be applied in the css file, because bootstrap theme have overwritten the
     margin: 0 0 0 15px;
     font-weight: bold;
     font-size: 18px;
+    text-align: start;
+
 }
 
-#add-price-line,#display-chart {
+#add-price-line,#display-chart,#open-interest {
     display: inline-block;
     margin: 0 0 0 15px;
     text-align: center;
@@ -40,3 +42,4 @@ can not be applied in the css file, because bootstrap theme have overwritten the
 h4 {
     color: rgb(189, 213, 255);
 }
+

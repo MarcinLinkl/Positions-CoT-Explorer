@@ -5,7 +5,6 @@ import sqlite3
 import pandas as pd
 import yfinance as yf
 from reports_cols import root_cols_desc, root_cols
-import json
 
 # in root_cols_desc we have the normal description of the each raw columns for each report type that we get from scopa source 
 # like "tot_rept": "Total Reportable",
@@ -29,6 +28,7 @@ def map_column_name(report, column_name):
 def get_data(report_type, cftc_code, years):
     roots = root_cols[report_type.split("_")[1]]
     cols = [f"{item}_{suffix}" for item in roots for suffix in ["net", "long", "short"]]
+    cols.append("open_interest")
     conn = sqlite3.connect("data.db")
     query = f"""
     SELECT report_date_as_yyyy_mm_dd, {', '.join(cols)}
@@ -64,6 +64,7 @@ def prepare_chart_data(report_type, cftc_code, years, ticker):
         df_positions = df_data.drop(columns=df_percentages.columns)
     if ticker:
         df_price = get_price_data(ticker, years)
+        print(f"Price data for {ticker} from {years[0]} to {years[1]}: {df_price}")
     return {"price": df_price, "positions": df_positions, "percentages": df_percentages}
 
 
@@ -105,7 +106,14 @@ def make_only_price_graph(ticker, ticker_name):
     print("Price data:", df_price)
     return create_fig_price(df_price, ticker_name) if not df_price.empty else {}
 
-def create_fig_price(df, title):
+def create_fig_price(data_dict, title, open_interest=False):
+
+    df = data_dict.get("price", pd.DataFrame())
+    df_open_interest = data_dict.get("positions", pd.DataFrame())
+    df_open_interest=df_open_interest[["open_interest"]] if "open_interest" in df_open_interest.columns else pd.DataFrame()
+    if isinstance(df, pd.Series):
+        df = df.to_frame(name="price")
+
     fig = {
         "data": [], 
         "layout": {
@@ -120,10 +128,24 @@ def create_fig_price(df, title):
             "name": f"PRICE of {title} [$]", "yaxis": "y2"
         })
         fig["layout"]["yaxis2"] = {"overlaying": "y", "side": "right", "title": "PRICE [$]", "showgrid": False}
+
+        
+    
+    print("DataFrame columns:", df.columns)
+    if not df_open_interest.empty and open_interest:
+        fig["data"].append({
+            "x": df_open_interest.index, "y": df_open_interest.iloc[:, 0], "type": "line", 
+            "name": "Open Interest", "line": {"color": "gray", "dash": "dot"}
+        })
+        # fig["layout"]["yaxis3"] = {"overlaying": "y", "side": "left", "title": "Open Interest", "showgrid": False}
+
+
+    print("**" * 20)
+    
     return fig
 
 
-def create_figure_positions(df, title, selected_cols=None, include_price=False, ticker_name=None):
+def create_figure_positions(df, title, selected_cols=None, include_price=False, ticker_name=None, open_interest=False):
     fig = {
         "data": [],
         "layout": {
@@ -137,6 +159,13 @@ def create_figure_positions(df, title, selected_cols=None, include_price=False, 
             "name": f"PRICE of {ticker_name} [$]", "yaxis": "y2"
         })
         fig["layout"]["yaxis2"] = {"overlaying": "y", "side": "right", "title": "PRICE [$]", "showgrid": False}
+    if open_interest and "open_interest" in df["positions"].columns:
+        fig["data"].append({
+            "x": df["positions"].index, "y": df["positions"]["open_interest"], 
+            "type": "line", "name": "Open Interest", "line": {"color": "gray", "dash": "dot"}
+        })
+    print("**" * 20)
+    print("Selected columns for positions chart:", df)    
     if selected_cols:
         # Add position data to the chart on the left y-axis
         for col in selected_cols:
@@ -181,15 +210,20 @@ def create_figure_percentages(df, title, selected_cols=None, include_price=False
     return fig
 
 
-def make_graphs_and_cards(report_type, market_commodity, selected_positions,years, options, ticker, ticker_name, include_price):
+def make_graphs_and_cards(report_type, market_commodity, selected_positions,years, options, ticker, ticker_name, include_price , open_interest):
+
     chart_data = prepare_chart_data(report_type, market_commodity['cftc_code'], years, ticker)
-    fig_price = create_fig_price(chart_data["price"], ticker_name ) if ticker else {}
+    # in red  ** is for debugging purposes to check the data that we are getting from the database and yahoo finance before creating the charts, we can remove it later
+    # print in red
+    print("\033[91m" + "**" * 200 + "\033[0m")
+  
+    fig_price = create_fig_price(chart_data , ticker_name ,open_interest) if ticker or open_interest else {}
     if market_commodity:
         positions_title = "Positions Of " + market_commodity["name_market"] + " [" + market_commodity["units"] + "]"
         percentages_title = "Percentage Positions Of " + market_commodity["name_market"] + " [%]"
         position_cols = [f"{pos}_positions_{opt}" for pos in selected_positions for opt in options]
         percentage_cols = ["pct_of_oi_" + x + "_" + y for x in selected_positions for y in options]
-        fig_positions = create_figure_positions(chart_data, positions_title, position_cols, include_price, ticker_name) if selected_positions and options else {}
+        fig_positions = create_figure_positions(chart_data, positions_title, position_cols, include_price, ticker_name, open_interest) 
         fig_percentages = create_figure_percentages(chart_data, percentages_title, percentage_cols, include_price, ticker_name) if selected_positions and options else {}
    
     if market_commodity and ticker:

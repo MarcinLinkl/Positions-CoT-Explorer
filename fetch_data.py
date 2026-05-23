@@ -12,7 +12,7 @@ from datetime import datetime as dt
 import time
 
 # Define the number of years to look back for code availability
-YEARS_BACK_FOR_CODES_AVABILITY = 3
+YEARS_BACK_FOR_CODES_AVABILITY = 2
 
 # Dictionary mapping report names to their respective Socrata API codes
 REPORTS_TABLE = {

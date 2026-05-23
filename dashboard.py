@@ -91,7 +91,7 @@ app.layout = dbc.Container(
                     className="col-12 my-2 text-center",
                 ),
             ]
-        ),
+            ),
         dbc.Row(
             [
                 dbc.Col(
@@ -151,12 +151,12 @@ app.layout = dbc.Container(
                         switch=True,
                         className="text-center",
                     ),
-                    className="col-lg-3 col-6 my-2",
+                    className="col-lg-2 col-6 my-2",
                 ),
                 dbc.Col(
                     dbc.Checklist(
                         id="add-price-line",
-                        options=[{"label": "Add price line", "value": True}],
+                        options=[{"label": "Price line", "value": True}],
                         value=False,
                         inline=True,
                         switch=True,
@@ -165,6 +165,19 @@ app.layout = dbc.Container(
                     ),
                     className="col-lg-2 col-6 my-2",
                 ),
+                dbc.Col(
+                    dbc.Checklist(
+                        id="open-interest",
+                        options=[{"label": "Open interest", "value": True}],
+                        value=False,
+                        inline=True,
+                        switch=True,
+                        className="text-center",
+                        
+                    ),
+                    className="col-lg-2 col-6 my-2",
+                ),
+
                 dbc.Col(
                     dbc.Button(
                         "Show correlations",
@@ -190,7 +203,7 @@ app.layout = dbc.Container(
                         inline=True,
                         className="text-center",
                     ),
-                    className="col-lg-3 col-6 my-2",
+                    className="col-lg-2 col-6 my-2",
                 ),
             ]
         ),
@@ -314,9 +327,10 @@ def toggle_correlation_card(show_clicks, hide_clicks):
     Input("show-options", "value"),
     Input("chart-price-dropdown", "value"),
     Input("add-price-line", "value"),
+    Input("open-interest", "value")
 )
 def update_graphs_callback(
-    report_type, market_commodity_str, positions, years, options, ticker, include_price):
+    report_type, market_commodity_str, positions, years, options, ticker, include_price, open_interest):
 
     if market_commodity_str is not None:
         print(f"market_commodity_str: {market_commodity_str}")
@@ -331,7 +345,7 @@ def update_graphs_callback(
             return make_only_price_graph(ticker,ticker_name), dash.no_update, dash.no_update, dash.no_update
         
         return dash.no_update, dash.no_update, dash.no_update, dash.no_update
-    return make_graphs_and_cards(report_type, market_commodity, positions, years, options, ticker,ticker_name, include_price)
+    return make_graphs_and_cards(report_type, market_commodity, positions, years, options, ticker,ticker_name, include_price,open_interest)
 
 
 
